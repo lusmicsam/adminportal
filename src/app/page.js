@@ -3,23 +3,25 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { User, Lock, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuth();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   // Form States
-  const [regId, setRegId] = useState("");
+  const [regId, setRegId] = useState(""); // This is actually 'email' for the API
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
 
   // Clear error on input change
   const clearError = () => {
     if (error) setError("");
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     clearError();
 
@@ -31,18 +33,16 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    // Simulate API call to verify credentials
-    setTimeout(() => {
-      // Mock Credential Check
-      // ID: 12312621, Pass: Avi@6296
-      if (regId === "12312621" && password === "Avi@6296") {
-        // Success: Direct redirect to dashboard
-        router.push("/dashboard");
-      } else {
-        setLoading(false);
-        setError("Invalid Credentials. Check ID & Password.");
-      }
-    }, 1500);
+    // Call API Login via AuthContext
+    // Note: API expects 'email' but field is 'regId'. Passing regId as email.
+    const res = await login(regId, password);
+
+    if (res.success) {
+      router.push("/admin/dashboard");
+    } else {
+      setLoading(false);
+      setError(res.error || "Invalid Credentials");
+    }
   };
 
   return (
