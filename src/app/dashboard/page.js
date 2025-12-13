@@ -43,9 +43,9 @@ export default function DashboardPage() {
             {/* Stats / Navigation Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: "Teachers", icon: Users, active: true },
                     { label: "Batches", icon: LayoutGrid, active: false },
                     { label: "Sections", icon: Layers, active: false },
+                    { label: "Teachers", icon: Users, active: true },
                     { label: "Students", icon: GraduationCap, active: false }
                 ].map((item, idx) => (
                     <div key={idx} className={`relative p-6 rounded-2xl border ${item.active ? "bg-blue-600/10 border-blue-500/50" : "bg-white/5 border-white/5 hover:bg-white/10"} transition-all cursor-pointer group`}>
