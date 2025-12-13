@@ -329,15 +329,15 @@ export default function DeepDiveDashboard() {
                             </span>
                         </h2>
 
-                        <div className="flex gap-3 w-full md:w-auto">
+                        <div className="flex-1 flex justify-center px-4 md:px-12 w-full">
                             {(view === 'students' || view === 'teachers') && (
-                                <form onSubmit={handleSearch} className="relative w-full md:w-64">
-                                    <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+                                <form onSubmit={handleSearch} className="relative w-full max-w-2xl">
+                                    <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-500" />
                                     <input
                                         value={searchQuery}
                                         onChange={e => setSearchQuery(e.target.value)}
                                         placeholder={`Search ${view} ID...`}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:border-cyan-500/50 outline-none transition-colors"
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-base focus:border-cyan-500/50 outline-none transition-colors"
                                     />
                                 </form>
                             )}
@@ -503,7 +503,7 @@ export default function DeepDiveDashboard() {
                                         <div key={idx} className="flex justify-between items-center p-4 rounded-xl bg-white/5 border border-white/5">
                                             <div>
                                                 <h4 className="font-bold">{student.student_name || student.name}</h4>
-                                                <p className="text-sm text-gray-400">{student.uni_reg_id || student.reg_id || student.student_id}</p>
+                                                <p className="text-sm text-gray-400">{student.uni_reg_id || student.reg_id}</p>
                                             </div>
                                             <button
                                                 onClick={() => startStudentInspection(student)}
