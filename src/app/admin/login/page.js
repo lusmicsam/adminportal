@@ -1,18 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, Lock, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 export default function AdminLoginPage() {
     const router = useRouter();
-    const { login } = useAuth();
+    const { login, user } = useAuth();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    // Auto-redirect if already logged in
+    useEffect(() => {
+        if (user) {
+            router.push("/admin/dashboard");
+        }
+    }, [user, router]);
 
     const handleLogin = async (e) => {
         e.preventDefault();

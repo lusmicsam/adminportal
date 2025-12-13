@@ -2,11 +2,9 @@
 
 import { createContext, useState, useEffect, useContext } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { API_CONFIG } from "../utils/api";
 
 const AuthContext = createContext();
-
-// Using Next.js Rewrite Proxy to avoid CORS issues
-const API_BASE_URL = "/api/proxy";
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -15,7 +13,7 @@ export const AuthProvider = ({ children }) => {
     const pathname = usePathname();
 
     // Helper for API calls to ensure consistent config
-    const apiCall = async (endpoint, options = {}) => {
+    const apiCall = async (url, options = {}) => {
         const defaultHeaders = {
             "Content-Type": "application/json",
         };
@@ -29,7 +27,7 @@ export const AuthProvider = ({ children }) => {
             credentials: "include", // CRITICAL: Required for HttpOnly Cookies
         };
 
-        return fetch(`${API_BASE_URL}${endpoint}`, config);
+        return fetch(url, config);
     };
 
     // 1. Check Session (On Mount & Route Change)
@@ -39,7 +37,9 @@ export const AuthProvider = ({ children }) => {
             // but initial load needs it.
             if (!user) setLoading(true);
 
-            const res = await apiCall("/api/university/auth/me", { method: "GET" });
+            // Use verify endpoint from centralized config
+            const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.me}`;
+            const res = await apiCall(url, { method: "GET" });
 
             if (res.ok) {
                 const data = await res.json();
@@ -67,7 +67,8 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         try {
             setLoading(true);
-            const res = await apiCall("/api/university/auth/login", {
+            const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.login}`;
+            const res = await apiCall(url, {
                 method: "POST",
                 body: JSON.stringify({ email, password }),
             });
@@ -92,7 +93,8 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         try {
             setLoading(true);
-            await apiCall("/api/university/auth/logout", { method: "POST" });
+            const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.logout}`;
+            await apiCall(url, { method: "POST" });
             setUser(null);
             router.push("/admin/login");
         } catch (error) {
