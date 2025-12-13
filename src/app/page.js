@@ -1,65 +1,155 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { User, Lock, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Form States
+  const [regId, setRegId] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Clear error on input change
+  const clearError = () => {
+    if (error) setError("");
+  };
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    clearError();
+
+    // Basic validation
+    if (!regId || !password) {
+      setError("Please enter both ID and Password");
+      return;
+    }
+
+    setLoading(true);
+
+    // Simulate API call to verify credentials
+    setTimeout(() => {
+      // Mock Credential Check
+      // ID: 12312621, Pass: Avi@6296
+      if (regId === "12312621" && password === "Avi@6296") {
+        // Success: Direct redirect to dashboard
+        router.push("/dashboard");
+      } else {
+        setLoading(false);
+        setError("Invalid Credentials. Check ID & Password.");
+      }
+    }, 1500);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4">
+      {/* Background Decor */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px]" />
+
+      {/* Login Card */}
+      <div className="glass-card w-full max-w-md p-8 rounded-2xl shadow-2xl relative z-10 border border-white/10 transition-all duration-300">
+
+        {/* Header Badge */}
+        <div className="flex justify-center mb-6">
+          <div className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-medium text-slate-300 tracking-wide uppercase">
+              Student Results Portal — Teacher Access
+            </span>
+          </div>
+        </div>
+
+        {/* Title & Description */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 mb-2">
+            Sign in to continue
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+
+          <div className="text-slate-400 text-sm">
+            <p>Professional. Secure. Insight-driven.</p>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-red-400 text-sm animate-in fade-in slide-in-from-top-2">
+            <AlertCircle className="w-4 h-4" />
+            {error}
+          </div>
+        )}
+
+        {/* Form Container */}
+        <div className="relative">
+          <form onSubmit={handleLogin} className="space-y-5 animate-in fade-in slide-in-from-left-4 duration-300">
+            {/* Reg ID */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider ml-1">
+                Registration ID
+              </label>
+              <div className="relative group">
+                <User className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                <input
+                  type="text"
+                  value={regId}
+                  onChange={(e) => { setRegId(e.target.value); clearError(); }}
+                  placeholder="Enter your Reg ID"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider ml-1">
+                Password
+              </label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); clearError(); }}
+                  placeholder="Enter your password"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-12 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 text-center">
+          <p className="text-xs text-slate-500">
+            For authorized teachers only. All access is logged.
           </p>
+          <div className="mt-8 flex justify-center">
+            <div className="w-8 h-8 rounded-full bg-black border border-white/20 flex items-center justify-center">
+              <span className="text-white font-serif font-bold text-sm">N</span>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
