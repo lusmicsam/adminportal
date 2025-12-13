@@ -27,7 +27,8 @@ export default function AdminDashboardPage() {
                     // Cookie is passed automatically due to credentials: 'include' in global fetch config
                     // Wait, simplistic implementation here using fetch directly vs api helper?
                     // We should probably use the same credentials config.
-                    const res = await fetch("https://ap-a9ztlk738-ujjwal16895s-projects.vercel.app/api/admin/my-batches", {
+                    // Use the proxy to avoid CORS and ensure correct domain
+                    const res = await fetch("/api/proxy/api/admin/my-batches", {
                         credentials: "include"
                     });
                     if (res.ok) {
