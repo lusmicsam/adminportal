@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User, Lock, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import { User, Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 export default function AdminLoginPage() {
@@ -11,6 +11,7 @@ export default function AdminLoginPage() {
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -49,13 +50,13 @@ export default function AdminLoginPage() {
             <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px]" />
 
             {/* Login Card */}
-            <div className="glass-card w-full max-w-md p-8 rounded-2xl shadow-2xl relative z-10 border border-white/10 transition-all duration-300">
+            <div className="glass-card w-full max-w-md p-8 rounded-2xl shadow-2xl relative z-10 border border-gray-200 dark:border-white/10 transition-all duration-300 bg-white/80 dark:bg-black/40 backdrop-blur-xl">
 
                 {/* Header Badge */}
                 <div className="flex justify-center mb-6">
-                    <div className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="text-xs font-medium text-slate-300 tracking-wide uppercase">
+                    <div className="px-4 py-1.5 rounded-full bg-cyan-500/10 dark:bg-white/5 border border-cyan-500/20 dark:border-white/10 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-cyan-500 dark:bg-emerald-400 animate-pulse" />
+                        <span className="text-xs font-medium text-cyan-700 dark:text-slate-300 tracking-wide uppercase">
                             University Admin Portal
                         </span>
                     </div>
@@ -63,15 +64,15 @@ export default function AdminLoginPage() {
 
                 {/* Title */}
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400 mb-2">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-r dark:from-white dark:to-slate-400 mb-2">
                         Admin Login
                     </h1>
-                    <p className="text-slate-400 text-sm">Secure access to university controls.</p>
+                    <p className="text-gray-500 dark:text-slate-400 text-sm">Secure access to university controls.</p>
                 </div>
 
                 {/* Error Message */}
                 {error && (
-                    <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-red-400 text-sm animate-in fade-in slide-in-from-top-2">
+                    <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-red-600 dark:text-red-400 text-sm animate-in fade-in slide-in-from-top-2">
                         <AlertCircle className="w-4 h-4" />
                         {error}
                     </div>
@@ -80,36 +81,43 @@ export default function AdminLoginPage() {
                 {/* Form */}
                 <form onSubmit={handleLogin} className="space-y-5">
                     <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider ml-1">
+                        <label className="text-xs font-semibold text-gray-500 dark:text-slate-300 uppercase tracking-wider ml-1">
                             Email Address
                         </label>
                         <div className="relative group">
-                            <User className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                            <User className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500 group-focus-within:text-blue-500 dark:group-focus-within:text-blue-400 transition-colors" />
                             <input
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="admin@university.edu"
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                                className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                                 required
                             />
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider ml-1">
+                        <label className="text-xs font-semibold text-gray-500 dark:text-slate-300 uppercase tracking-wider ml-1">
                             Password
                         </label>
                         <div className="relative group">
-                            <Lock className="absolute left-4 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
+                            <Lock className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500 group-focus-within:text-blue-500 dark:group-focus-within:text-blue-400 transition-colors" />
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••"
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-12 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
+                                className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 pl-12 pr-12 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                                 required
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-4 top-3.5 text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors focus:outline-none"
+                            >
+                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            </button>
                         </div>
                     </div>
 
