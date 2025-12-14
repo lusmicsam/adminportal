@@ -4,7 +4,7 @@ const nextConfig = {
     return [
       {
         source: '/api/proxy/admin/:path*',
-        destination: 'https://ap-9kygkntzn-ujjwal16895s-projects.vercel.app/:path*',
+        destination: 'https://ap-3fqqyqoo8-ujjwal16895s-projects.vercel.app/:path*',
       },
       {
         source: '/api/proxy/student/:path*',

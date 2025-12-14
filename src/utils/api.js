@@ -13,6 +13,7 @@ export const API_CONFIG = {
         me: '/api/university/auth/me',
         myBatches: '/api/university/admin/my-batches',
         myTeachers: '/api/university/admin/my-teachers',
+        courseStructure: (courseId) => `/api/university/admin/course-structure/${courseId}`,
     },
 
     // Master Data

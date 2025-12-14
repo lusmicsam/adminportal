@@ -1,16 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, Lock, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, user } = useAuth(); // Destructure user
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Auto-redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      router.push("/admin/dashboard");
+    }
+  }, [user, router]);
+
 
   // Form States
   const [regId, setRegId] = useState(""); // This is actually 'email' for the API

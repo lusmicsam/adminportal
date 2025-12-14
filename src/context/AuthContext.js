@@ -31,36 +31,57 @@ export const AuthProvider = ({ children }) => {
     };
 
     // 1. Check Session (On Mount & Route Change)
-    const checkSession = async () => {
+    const checkSession = async (isBackground = false) => {
         try {
-            // Don't show loading on every check if we already have a user, 
-            // but initial load needs it.
-            if (!user) setLoading(true);
+            // Don't show loading if it's a background check or we already have a user
+            if (!user && !isBackground) setLoading(true);
 
             // Use verify endpoint from centralized config
             const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.me}`;
+
+            // For cross-origin requests (Vercel backend), we might need different credentials settings
+            // But relying on existing 'include' for cookies as per instructions.
             const res = await apiCall(url, { method: "GET" });
 
             if (res.ok) {
                 const data = await res.json();
-                setUser(data.user || data); // Store user data
-            } else {
-                setUser(null);
-                // If we are on a protected route, redirect to login
-                if (pathname.startsWith("/admin/dashboard")) {
-                    router.push("/admin/login");
+                // API returns: { email, name, universityId, isAuthenticated: true }
+                if (data.isAuthenticated) {
+                    setUser(data);
+                } else {
+                    // API might return success=true but isAuthenticated=false in some designs, 
+                    // or just 401. If we get here and isAuthenticated is explicitly false:
+                    handleLogout();
                 }
+            } else {
+                // 401 or other error indicates invalid session
+                handleLogout();
             }
         } catch (error) {
             console.error("Session check failed:", error);
-            setUser(null);
+            if (!isBackground) setUser(null); // Only clear on explicit check, retries handled by interval
         } finally {
-            setLoading(false);
+            if (!isBackground) setLoading(false);
+        }
+    };
+
+    const handleLogout = () => {
+        setUser(null);
+        // Only redirect if we are strictly in a protected route
+        if (pathname.includes("/admin/dashboard")) {
+            router.push("/admin/login");
         }
     };
 
     useEffect(() => {
         checkSession();
+
+        // Background Session Check (every 60 seconds)
+        const intervalId = setInterval(() => {
+            checkSession(true);
+        }, 60000);
+
+        return () => clearInterval(intervalId);
     }, []); // Run once on mount
 
     // 2. Login Function
@@ -75,6 +96,8 @@ export const AuthProvider = ({ children }) => {
 
             const data = await res.json();
 
+            // Check if login was actually successful based on API response
+            // Assuming simplified response as per user request or standard JWT set-cookie flow
             if (res.ok) {
                 // Successful login
                 await checkSession(); // Refresh user state immediately
@@ -94,8 +117,8 @@ export const AuthProvider = ({ children }) => {
         try {
             setLoading(true);
             const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.logout}`;
-            await apiCall(url, { method: "POST" });
-            setUser(null);
+            await apiCall(url, { method: "POST" }); // Assuming this clears the cookie
+            handleLogout();
             router.push("/admin/login");
         } catch (error) {
             console.error("Logout failed:", error);
