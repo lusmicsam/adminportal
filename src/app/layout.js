@@ -13,14 +13,17 @@ export const metadata = {
 };
 
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={`${jakarta.variable} antialiased`}>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body className={`${jakarta.variable} antialiased`} suppressHydrationWarning>
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

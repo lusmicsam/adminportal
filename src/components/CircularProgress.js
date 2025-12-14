@@ -19,7 +19,7 @@ export const CircularProgress = ({ percentage = 0, size = 40, strokeWidth = 4, c
         <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
             <svg className="transform -rotate-90 w-full h-full">
                 <circle
-                    className="text-white/10"
+                    className="text-gray-200 dark:text-white/10"
                     strokeWidth={strokeWidth}
                     stroke="currentColor"
                     fill="transparent"
@@ -40,7 +40,7 @@ export const CircularProgress = ({ percentage = 0, size = 40, strokeWidth = 4, c
                     cy={size / 2}
                 />
             </svg>
-            <span className="absolute text-[10px] font-bold text-white">{Math.round(percentage)}%</span>
+            <span className="absolute text-[10px] font-bold text-gray-900 dark:text-white">{Math.round(percentage)}%</span>
         </div>
     );
 };

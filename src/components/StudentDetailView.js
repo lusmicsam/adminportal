@@ -184,27 +184,27 @@ export default function StudentDetailView({ student, onBack }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right duration-300 bg-[#0B0F19]">
+        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right duration-300 bg-gray-50 dark:bg-[#0B0F19]">
             {/* Background Effects (Matches Dashboard) */}
-            <div className="fixed -top-40 -left-48 h-[38rem] w-[38rem] bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
-            <div className="fixed -bottom-44 -right-40 h-[42rem] w-[42rem] bg-indigo-500/10 blur-3xl rounded-full pointer-events-none" />
+            <div className="fixed -top-40 -left-48 h-[38rem] w-[38rem] bg-cyan-500/10 blur-3xl rounded-full pointer-events-none opacity-50 dark:opacity-100" />
+            <div className="fixed -bottom-44 -right-40 h-[42rem] w-[42rem] bg-indigo-500/10 blur-3xl rounded-full pointer-events-none opacity-50 dark:opacity-100" />
 
             {/* Header */}
-            <div className="flex items-center gap-4 p-6 border-b border-white/5 bg-white/5 backdrop-blur-xl sticky top-0 z-10 relative">
+            <div className="flex items-center gap-4 p-6 border-b border-gray-200 dark:border-white/5 bg-white/70 dark:bg-white/5 backdrop-blur-xl sticky top-0 z-10 relative">
                 <button
                     onClick={viewLink === 'deep_dive' ? handleBackToCourses : onBack}
-                    className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition"
+                    className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition"
                 >
                     <ArrowLeft className="w-6 h-6" />
                 </button>
                 <div>
-                    <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                         {student.name || student.student_name}
-                        <span className="text-sm font-normal px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-mono">
+                        <span className="text-sm font-normal px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 font-mono">
                             {student.uni_reg_id || student.reg_id}
                         </span>
                     </h2>
-                    <p className="text-gray-400 text-sm mt-1">
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
                         Batch: {student.batch_id || 'N/A'} • Enrolled Courses: {courses.length}
                     </p>
                 </div>
@@ -225,15 +225,15 @@ export default function StudentDetailView({ student, onBack }) {
                 {viewLink === 'deep_dive' && selectedCourse && (
                     <div className="flex h-full">
                         {/* LEFT COLUMN: Course Structure */}
-                        <div className="w-1/3 min-w-[350px] border-r border-white/5 overflow-y-auto custom-scrollbar bg-black/10 backdrop-blur-md p-6">
+                        <div className="w-1/3 min-w-[350px] border-r border-gray-200 dark:border-white/5 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-black/10 backdrop-blur-md p-6">
                             <div className="mb-6">
-                                <div className="text-xs text-cyan-400 uppercase tracking-wider mb-2">Selected Course</div>
-                                <h3 className="text-2xl font-bold leading-tight text-white mb-4">{selectedCourse.course_name}</h3>
-                                <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5">
+                                <div className="text-xs text-cyan-600 dark:text-cyan-400 uppercase tracking-wider mb-2">Selected Course</div>
+                                <h3 className="text-2xl font-bold leading-tight text-gray-900 dark:text-white mb-4">{selectedCourse.course_name}</h3>
+                                <div className="flex items-center gap-3 p-3 bg-white dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
                                     <CircularProgress percentage={selectedCourse.completion_rate || 0} size={48} strokeWidth={4} />
                                     <div>
-                                        <div className="text-white font-bold">Overall Progress</div>
-                                        <div className="text-xs text-gray-400">Based on completed units</div>
+                                        <div className="text-gray-900 dark:text-white font-bold">Overall Progress</div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400">Based on completed units</div>
                                     </div>
                                 </div>
                             </div>
@@ -245,15 +245,15 @@ export default function StudentDetailView({ student, onBack }) {
                             ) : (
                                 <div className="space-y-3">
                                     {courseStructure && Array.isArray(courseStructure) && courseStructure.map((unit) => (
-                                        <div key={unit.unit_id} className="rounded-xl border border-white/5 bg-white/5 overflow-hidden transition-all">
+                                        <div key={unit.unit_id} className="rounded-xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/5 overflow-hidden transition-all shadow-sm dark:shadow-none">
                                             {/* Unit Header */}
                                             <button
                                                 onClick={() => toggleUnit(unit.unit_id)}
-                                                className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+                                                className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`w-2 h-2 rounded-full shadow-[0_0_8px] ${selectedUnit === unit.unit_id ? 'bg-cyan-500 shadow-cyan-500/60' : 'bg-gray-600 shadow-transparent'}`} />
-                                                    <span className={`font-semibold text-sm text-left ${selectedUnit === unit.unit_id ? 'text-white' : 'text-gray-300'}`}>{unit.unit_name}</span>
+                                                    <div className={`w-2 h-2 rounded-full shadow-[0_0_8px] ${selectedUnit === unit.unit_id ? 'bg-cyan-500 shadow-cyan-500/60' : 'bg-gray-400 dark:bg-gray-600 shadow-transparent'}`} />
+                                                    <span className={`font-semibold text-sm text-left ${selectedUnit === unit.unit_id ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-300'}`}>{unit.unit_name}</span>
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                     <CircularProgress percentage={unit.analytics?.completion_rate || 0} size={32} strokeWidth={3} />
@@ -263,15 +263,15 @@ export default function StudentDetailView({ student, onBack }) {
 
                                             {/* Subunits List */}
                                             {selectedUnit === unit.unit_id && (
-                                                <div className="bg-black/20 border-t border-white/5 p-2 space-y-1">
+                                                <div className="bg-gray-50 dark:bg-black/20 border-t border-gray-100 dark:border-white/5 p-2 space-y-1">
                                                     {unit.sub_units && unit.sub_units.map((sub) => (
                                                         <button
                                                             key={sub.sub_unit_id}
                                                             onClick={() => handleSubUnitClick(unit.unit_id, sub.sub_unit_id, sub)}
                                                             className={`w-full text-left p-3 rounded-lg text-xs transition-all flex justify-between items-center group
                                                                 ${inspectingSubUnit?.subUnitId === sub.sub_unit_id
-                                                                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-medium'
-                                                                    : 'text-gray-400 hover:text-white hover:bg-white/5'}`
+                                                                    ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 font-medium'
+                                                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/5'}`
                                                             }
                                                         >
                                                             <span>{sub.title}</span>
@@ -300,10 +300,10 @@ export default function StudentDetailView({ student, onBack }) {
                                 />
                             ) : (
                                 <div className="h-full flex flex-col items-center justify-center text-center text-gray-500">
-                                    <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-6 animate-pulse border border-white/5">
+                                    <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-6 animate-pulse border border-gray-200 dark:border-white/5">
                                         <Award className="w-10 h-10 opacity-20" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-white mb-2">Course Overview</h3>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Course Overview</h3>
                                     <p className="max-w-md mx-auto text-gray-400">Select a subunit from the left panel to view detailed performance metrics, attempt history, and scores.</p>
                                 </div>
                             )}
@@ -327,8 +327,8 @@ const CoursesGridView = ({ courses, loading, onSelect }) => {
     }
     return (
         <div className="p-8 overflow-y-auto h-full custom-scrollbar">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
-                <BookOpen className="w-5 h-5 text-cyan-400" />
+            <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-white">
+                <BookOpen className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                 Enrolled Courses
             </h3>
             {courses.length > 0 ? (
@@ -337,7 +337,7 @@ const CoursesGridView = ({ courses, loading, onSelect }) => {
                         <button
                             key={idx}
                             onClick={() => onSelect(course)}
-                            className="text-left group relative overflow-hidden p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/30 hover:bg-white/10 transition-all duration-300 backdrop-blur-sm"
+                            className="text-left group relative overflow-hidden p-6 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 hover:border-cyan-500/30 hover:bg-gray-50 dark:hover:bg-white/10 transition-all duration-300 backdrop-blur-sm shadow-sm dark:shadow-none"
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-cyan-400 shadow-lg border border-white/5">
@@ -350,7 +350,7 @@ const CoursesGridView = ({ courses, loading, onSelect }) => {
                                     </div>
                                 </div>
                             </div>
-                            <h4 className="text-lg font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors">
+                            <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
                                 {course.course_name}
                             </h4>
                             <div className="mt-4 flex items-center text-sm text-gray-500 group-hover:text-cyan-500/70 transition-colors">
@@ -436,32 +436,32 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
 
                 {loadingDetails ? (
                     <div className="space-y-6">
-                        <Skeleton className="h-32 w-full rounded-2xl bg-white/5" />
-                        <Skeleton className="h-96 w-full rounded-2xl bg-white/5" />
+                        <Skeleton className="h-32 w-full rounded-2xl bg-white dark:bg-white/5" />
+                        <Skeleton className="h-96 w-full rounded-2xl bg-white dark:bg-white/5" />
                     </div>
                 ) : attemptDetails ? (
                     <>
                         {/* 1. Overview Card */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
-                                <div className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Score</div>
-                                <div className="text-3xl font-bold text-emerald-400">
-                                    {attemptDetails.overview.total_score} <span className="text-lg text-gray-500 font-normal">/ {attemptDetails.overview.max_score}</span>
+                            <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Score</div>
+                                <div className="text-3xl font-bold text-emerald-500 dark:text-emerald-400">
+                                    {attemptDetails.overview.total_score} <span className="text-lg text-gray-400 dark:text-gray-500 font-normal">/ {attemptDetails.overview.max_score}</span>
                                 </div>
                             </div>
-                            <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
-                                <div className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Status</div>
-                                <div className={`text-xl font-bold ${attemptDetails.overview.status === 'Passed' ? 'text-emerald-400' : 'text-red-400'}`}>
+                            <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Status</div>
+                                <div className={`text-xl font-bold ${attemptDetails.overview.status === 'Passed' ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
                                     {attemptDetails.overview.status}
                                 </div>
                             </div>
-                            <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
-                                <div className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Duration</div>
-                                <div className="text-xl font-bold text-white">{attemptDetails.overview.duration_formatted}</div>
+                            <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Duration</div>
+                                <div className="text-xl font-bold text-gray-900 dark:text-white">{attemptDetails.overview.duration_formatted}</div>
                             </div>
-                            <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
-                                <div className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Result Type</div>
-                                <div className="text-xl font-bold text-cyan-400 capitalize">{resultType}</div>
+                            <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Result Type</div>
+                                <div className="text-xl font-bold text-cyan-600 dark:text-cyan-400 capitalize">{resultType}</div>
                             </div>
                         </div>
 
@@ -469,8 +469,8 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                         {attemptDetails.proctoring_metrics && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
-                                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                        <AlertCircle className="w-5 h-5 text-red-400" /> Warnings & Violations
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                        <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" /> Warnings & Violations
                                     </h3>
                                     <div className="space-y-3">
                                         <MetricRow label="Face Warnings" value={attemptDetails.proctoring_metrics.face_warnings} isWarning={attemptDetails.proctoring_metrics.face_warnings > 0} />
@@ -479,9 +479,9 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                         <MetricRow label="Blocked Seconds" value={attemptDetails.proctoring_metrics.blocked_seconds} suffix="s" />
                                     </div>
                                 </div>
-                                <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
-                                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                        <Activity className="w-5 h-5 text-blue-400" /> System Health
+                                <div className="p-6 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                        <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" /> System Health
                                     </h3>
                                     <div className="space-y-3">
                                         <MetricRow label="Network Health" value={attemptDetails.proctoring_metrics.network_health} />
@@ -501,9 +501,9 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
 
                         {/* 3. System & Network Logs */}
                         {attemptDetails.debug_configs && (
-                            <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
-                                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                    <Globe className="w-5 h-5 text-cyan-400" /> System & Network Logs
+                            <div className="p-6 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                    <Globe className="w-5 h-5 text-cyan-600 dark:text-cyan-400" /> System & Network Logs
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                                     {/* Start Config */}
@@ -529,21 +529,21 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
 
                         {/* 4. Submissions / Questions */}
                         <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                                <BookOpen className="w-5 h-5 text-blue-400" />
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                 {resultType === 'coding' ? 'Code Submissions' : 'Question Responses'}
                             </h3>
                             {attemptDetails.submissions && attemptDetails.submissions.map((sub, idx) => (
-                                <div key={idx} className="group rounded-2xl border border-white/5 bg-white/5 overflow-hidden">
-                                    <div className="p-4 bg-white/5 border-b border-white/5 flex justify-between items-start gap-4">
+                                <div key={idx} className="group rounded-2xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/5 overflow-hidden shadow-sm dark:shadow-none">
+                                    <div className="p-4 bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/5 flex justify-between items-start gap-4">
                                         <div className="flex-1">
                                             {/* Hide generic titles */}
                                             {sub.question_title && sub.question_title !== "Question Details Fetched" && (
-                                                <h4 className="text-gray-200 font-bold text-sm mb-2">{sub.question_title}</h4>
+                                                <h4 className="text-gray-900 dark:text-gray-200 font-bold text-sm mb-2">{sub.question_title}</h4>
                                             )}
 
                                             {/* Description with formatting */}
-                                            <div className="text-sm text-gray-400 whitespace-pre-wrap font-mono leading-relaxed bg-black/20 p-3 rounded-lg border border-white/5">
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap font-mono leading-relaxed bg-gray-100 dark:bg-black/20 p-3 rounded-lg border border-gray-200 dark:border-white/5">
                                                 {sub.question_desc}
                                             </div>
 
@@ -592,13 +592,13 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
 
                                     {/* Test Cases */}
                                     {sub.test_cases && sub.test_cases.length > 0 && sub.test_cases[0].status !== 'N/A' && (
-                                        <div className="p-4 bg-black/10 border-t border-white/5">
+                                        <div className="p-4 bg-gray-50 dark:bg-black/10 border-t border-gray-200 dark:border-white/5">
                                             <div className="text-[10px] font-bold text-gray-500 uppercase mb-2">Test Cases</div>
                                             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
                                                 {sub.test_cases.map((tc, tci) => (
                                                     <div key={tci} className={`px-2 py-1.5 rounded text-[10px] border flex flex-col items-center justify-center text-center ${tc.status === 'Passed'
-                                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                        : 'bg-red-500/10 text-red-400 border-red-500/20'
+                                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                                        : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
                                                         }`}>
                                                         <span className="font-semibold mb-0.5">{tc.name}</span>
                                                         <span className="opacity-70">{tc.time}</span>
@@ -626,15 +626,15 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                     <div className="text-gray-400 text-sm uppercase tracking-wider font-semibold">Performance Details</div>
                 </div>
 
-                <h2 className="text-3xl font-bold text-white mb-6">{subUnit.name}</h2>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">{subUnit.name}</h2>
 
                 {/* TABS / SWITCH */}
-                <div className="p-1 rounded-xl bg-white/5 border border-white/10 inline-flex">
+                <div className="p-1 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 inline-flex shadow-sm dark:shadow-none">
                     <button
                         onClick={() => setResultType('mcq')}
                         className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${resultType === 'mcq'
                             ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
                             }`}
                     >
                         MCQ Progress
@@ -643,7 +643,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                         onClick={() => setResultType('coding')}
                         className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all ${resultType === 'coding'
                             ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
                             }`}
                     >
                         Coding / Questions
@@ -660,27 +660,27 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                 <>
                     {/* Summary Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-green-500/5 border border-emerald-500/20 backdrop-blur-sm">
-                            <div className="text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">Total Attempts</div>
-                            <div className="text-3xl font-bold text-white">{history?.length || 0}</div>
+                        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-emerald-500/10 dark:to-green-500/5 border border-gray-200 dark:border-emerald-500/20 backdrop-blur-sm shadow-sm dark:shadow-none">
+                            <div className="text-gray-500 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">Total Attempts</div>
+                            <div className="text-3xl font-bold text-gray-900 dark:text-white">{history?.length || 0}</div>
                         </div>
-                        <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border border-blue-500/20 backdrop-blur-sm">
-                            <div className="text-blue-400 text-xs font-bold uppercase tracking-wider mb-2">Best Score</div>
-                            <div className="text-3xl font-bold text-white">
+                        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-blue-500/10 dark:to-indigo-500/5 border border-gray-200 dark:border-blue-500/20 backdrop-blur-sm shadow-sm dark:shadow-none">
+                            <div className="text-gray-500 dark:text-blue-400 text-xs font-bold uppercase tracking-wider mb-2">Best Score</div>
+                            <div className="text-3xl font-bold text-gray-900 dark:text-white">
                                 {history?.length > 0
                                     ? Math.max(...history.map(h => h.score || h.marks_obtained || 0))
                                     : '-'}
                             </div>
                         </div>
-                        <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/5 border border-purple-500/20 backdrop-blur-sm">
-                            <div className="text-purple-400 text-xs font-bold uppercase tracking-wider mb-2">Avg. Time</div>
-                            <div className="text-3xl font-bold text-white">
+                        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-purple-500/10 dark:to-pink-500/5 border border-gray-200 dark:border-purple-500/20 backdrop-blur-sm shadow-sm dark:shadow-none">
+                            <div className="text-gray-500 dark:text-purple-400 text-xs font-bold uppercase tracking-wider mb-2">Avg. Time</div>
+                            <div className="text-3xl font-bold text-gray-900 dark:text-white">
                                 {history?.length > 0 ? '4m 32s' : '-'}
                             </div>
                         </div>
                     </div>
 
-                    <h3 className="text-xl font-bold mt-8 mb-4 flex items-center gap-2 text-white">
+                    <h3 className="text-xl font-bold mt-8 mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
                         <Clock className="w-5 h-5 text-gray-400" />
                         Attempt History ({resultType.toUpperCase()})
                     </h3>
@@ -690,14 +690,14 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                 <button
                                     key={idx}
                                     onClick={() => handleAttemptClick(attempt)}
-                                    className="w-full text-left p-4 rounded-xl bg-white/5 border border-white/5 flex justify-between items-center hover:border-cyan-500/30 hover:bg-white/10 transition-colors group"
+                                    className="w-full text-left p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 flex justify-between items-center hover:border-cyan-500/30 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors group shadow-sm dark:shadow-none"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center font-bold text-gray-400 border border-white/5 group-hover:text-cyan-400 group-hover:border-cyan-500/30 transition-colors">
+                                        <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center font-bold text-gray-400 border border-gray-200 dark:border-white/5 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 group-hover:border-cyan-500/30 transition-colors">
                                             #{attempt.attempt || attempt.attempt_count}
                                         </div>
                                         <div>
-                                            <div className="font-bold text-white group-hover:text-cyan-400 transition-colors">Attempt {attempt.attempt_count}</div>
+                                            <div className="font-bold text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">Attempt {attempt.attempt_count}</div>
                                             <div className="text-xs text-gray-500 flex gap-3 mt-0.5">
                                                 <span className="flex items-center gap-1">{new Date().toLocaleDateString()}</span>
                                             </div>
@@ -705,15 +705,15 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                     </div>
                                     <div className="text-right flex items-center gap-4">
                                         <div>
-                                            <div className="text-xl font-bold text-emerald-400">{attempt.marks_obtained} <span className="text-sm text-gray-500 font-normal">/ {attempt.total_marks}</span></div>
+                                            <div className="text-xl font-bold text-emerald-500 dark:text-emerald-400">{attempt.marks_obtained} <span className="text-sm text-gray-500 font-normal">/ {attempt.total_marks}</span></div>
                                             <div className="text-xs text-gray-500">Score</div>
                                         </div>
-                                        <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white group-hover:translate-x-1 transition-all" />
                                     </div>
                                 </button>
                             ))
                         ) : (
-                            <div className="text-center py-10 bg-white/5 rounded-xl border border-dashed border-white/10 text-gray-500">
+                            <div className="text-center py-10 bg-white dark:bg-white/5 rounded-xl border border-dashed border-gray-200 dark:border-white/10 text-gray-500">
                                 <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-30" />
                                 No attempts found for this subunit in {resultType}.
                             </div>
@@ -726,9 +726,9 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
 };
 
 const MetricRow = ({ label, value, suffix = '', isWarning = false }) => (
-    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-white/5 transition-colors">
-        <span className="text-xs text-gray-400 uppercase tracking-wider">{label}</span>
-        <span className={`font-mono font-bold ${isWarning ? 'text-red-400' : 'text-white'}`}>
+    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+        <span className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</span>
+        <span className={`font-mono font-bold ${isWarning ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
             {value}{suffix}
         </span>
     </div>

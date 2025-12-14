@@ -6,13 +6,15 @@ import { API_CONFIG } from '../../../utils/api';
 import { BatchSkeleton, TeacherSkeleton, ListSkeleton, Skeleton, SectionSkeleton, DashboardSkeleton } from '../../../components/Skeletons';
 import StudentDetailView from '../../../components/StudentDetailView';
 import TeacherDetailView from '../../../components/TeacherDetailView'; // Added
-import { Users, LayoutGrid, Layers, GraduationCap, Loader2, LogOut, ChevronRight, Search, FileText, Clock, AlertCircle } from "lucide-react";
+import { Users, LayoutGrid, Layers, GraduationCap, Loader2, LogOut, ChevronRight, Search, FileText, Clock, AlertCircle, Sun, Moon } from "lucide-react";
 import Link from 'next/link';
 import SectionDetailView from '../../../components/SectionDetailView';
 import BatchDetailView from '../../../components/BatchDetailView';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function DeepDiveDashboard() {
     const { user, logout, loading: authLoading } = useAuth();
+    const { theme, toggleTheme } = useTheme();
 
     const [view, setView] = useState('batches');
     const [searchQuery, setSearchQuery] = useState('');
@@ -217,7 +219,7 @@ export default function DeepDiveDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-[#0B0F19] text-gray-100 font-sans selection:bg-cyan-500/30">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 font-sans selection:bg-cyan-500/30">
             {/* Deep Dive Views (Overlay) */}
 
             {/* LEVEL 1: Batch Detail View */}
@@ -258,12 +260,12 @@ export default function DeepDiveDashboard() {
             )}
 
             {/* Background Effects */}
-            <div className="fixed -top-40 -left-48 h-[38rem] w-[38rem] bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
-            <div className="fixed -bottom-44 -right-40 h-[42rem] w-[42rem] bg-indigo-500/10 blur-3xl rounded-full pointer-events-none" />
+            <div className="fixed -top-40 -left-48 h-[38rem] w-[38rem] bg-cyan-500/10 blur-3xl rounded-full pointer-events-none opacity-50 dark:opacity-100" />
+            <div className="fixed -bottom-44 -right-40 h-[42rem] w-[42rem] bg-indigo-500/10 blur-3xl rounded-full pointer-events-none opacity-50 dark:opacity-100" />
 
             {/* Main Dashboard Content */}
             <div className={`transition-all duration-300 ${(inspectingStudent || inspectingSection) ? 'opacity-0 pointer-events-none scale-95 fixed inset-0' : 'opacity-100 scale-100'}`}>
-                <div className="relative text-white p-6 md:p-10 font-sans">
+                <div className="relative text-gray-900 dark:text-white p-6 md:p-10 font-sans">
 
                     <div className="max-w-7xl mx-auto relative z-10 space-y-8">
 
@@ -273,13 +275,19 @@ export default function DeepDiveDashboard() {
                                 <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-indigo-400">
                                     Admin Control Center
                                 </h1>
-                                <p className="text-gray-300 mt-2 flex items-center gap-3 text-lg font-medium">
+                                <p className="text-gray-500 dark:text-gray-300 mt-2 flex items-center gap-3 text-lg font-medium">
                                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" />
                                     {user.name || 'Administrator'}
                                 </p>
                             </div>
                             <div className="flex gap-3 items-center">
-                                <button onClick={logout} className="px-6 py-2 rounded-xl bg-red-500/10 text-red-300 border border-red-500/20 hover:bg-red-500/20 transition flex items-center gap-2">
+                                <button
+                                    onClick={toggleTheme}
+                                    className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-200 dark:hover:bg-white/10 transition text-gray-500 dark:text-gray-400"
+                                >
+                                    {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                                </button>
+                                <button onClick={logout} className="px-6 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-300 border border-red-500/20 hover:bg-red-500/20 transition flex items-center gap-2">
                                     <LogOut className="w-4 h-4" />
                                     Logout
                                 </button>
@@ -299,15 +307,15 @@ export default function DeepDiveDashboard() {
                                     onClick={() => { setView(item.id); setSearchQuery(''); }}
                                     className={`p-5 rounded-2xl border transition-all duration-300 text-left relative overflow-hidden group
                                 ${view === item.id
-                                            ? `bg-${item.color}-500/10 border-${item.color}-500/40 shadow-[0_0_30px_-5px_rgba(var(--${item.color}-rgb),0.3)]`
-                                            : 'bg-white/5 border-white/5 hover:bg-white/10'
+                                            ? `bg-${item.color}-50 dark:bg-${item.color}-500/10 border-${item.color}-200 dark:border-${item.color}-500/20 shadow-sm dark:shadow-[0_0_10px_rgba(var(--${item.color}-rgb),0.1)]`
+                                            : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/10'
                                         }`}
                                 >
                                     <div className={`w-12 h-12 rounded-xl mb-3 flex items-center justify-center transition-colors
-                                ${view === item.id ? `bg-${item.color}-500/20 text-${item.color}-400` : 'bg-white/5 text-gray-400 group-hover:text-white group-hover:bg-white/10'}`}>
+                                ${view === item.id ? `bg-${item.color}-500/20 text-${item.color}-600 dark:text-${item.color}-400` : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'}`}>
                                         <item.icon className="w-6 h-6" />
                                     </div>
-                                    <span className={`block text-xl font-bold ${view === item.id ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>
+                                    <span className={`block text-xl font-bold ${view === item.id ? `text-${item.color}-600 dark:text-${item.color}-400` : 'text-gray-900 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white'}`}>
                                         {item.label}
                                     </span>
                                 </button>
@@ -332,10 +340,11 @@ export default function DeepDiveDashboard() {
                                         <form onSubmit={handleSearch} className="relative w-full max-w-2xl">
                                             <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-500" />
                                             <input
+                                                type="text"
+                                                placeholder="Search students, teachers..."
                                                 value={searchQuery}
-                                                onChange={e => setSearchQuery(e.target.value)}
-                                                placeholder={`Search ${view} ID...`}
-                                                className="w-full bg-black/20 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-base focus:border-cyan-500/50 outline-none transition-colors"
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl pl-12 pr-4 py-3 text-base focus:border-cyan-500/50 outline-none transition-colors text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                                             />
                                         </form>
                                     )}
@@ -357,21 +366,21 @@ export default function DeepDiveDashboard() {
                                         </>
                                     ) : (
                                         teachers.map((t, idx) => (
-                                            <div key={idx} className="p-6 rounded-2xl bg-white/5 border border-white/5 flex flex-col justify-between h-full hover:border-cyan-500/30 transition-all group">
+                                            <div key={idx} className="p-6 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 flex flex-col justify-between h-full hover:border-cyan-500/30 transition-all group shadow-sm dark:shadow-none">
                                                 <div>
                                                     <div className="flex items-center gap-4 mb-6">
-                                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-cyan-400 font-bold shrink-0 text-xl shadow-lg border border-white/5">
+                                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-cyan-600 dark:text-cyan-400 font-bold shrink-0 text-xl shadow-lg border border-gray-100 dark:border-white/5">
                                                             {t.teacher_name ? t.teacher_name[0] : 'T'}
                                                         </div>
                                                         <div className="overflow-hidden">
-                                                            <h3 className="font-bold text-lg truncate text-white group-hover:text-cyan-400 transition-colors" title={t.teacher_name}>{t.teacher_name || 'Unknown'}</h3>
-                                                            <p className="text-xs text-gray-400 truncate font-mono mt-1" title={t.teacher_email}>{t.teacher_email || 'No email'}</p>
+                                                            <h3 className="font-bold text-lg truncate text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" title={t.teacher_name}>{t.teacher_name || 'Unknown'}</h3>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate font-mono mt-1" title={t.teacher_email}>{t.teacher_email || 'No email'}</p>
                                                         </div>
                                                     </div>
-                                                    <div className="space-y-3 mb-6 bg-black/20 p-4 rounded-xl border border-white/5">
+                                                    <div className="space-y-3 mb-6 bg-gray-50 dark:bg-black/20 p-4 rounded-xl border border-gray-100 dark:border-white/5">
                                                         <div className="text-sm text-gray-400 flex justify-between items-center">
                                                             <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Reg ID</span>
-                                                            <span className="font-mono text-white">{t.uni_reg_id || 'N/A'}</span>
+                                                            <span className="font-mono text-gray-700 dark:text-white">{t.uni_reg_id || 'N/A'}</span>
                                                         </div>
 
                                                         {/* Assigned Sections */}
@@ -429,21 +438,21 @@ export default function DeepDiveDashboard() {
                                                     <button
                                                         key={batch.batch_id}
                                                         onClick={() => handleBatchClick(batch)}
-                                                        className="text-left w-full h-full glass-panel p-5 rounded-2xl border border-white/5 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all group relative overflow-hidden"
+                                                        className="text-left w-full h-full glass-panel p-5 rounded-2xl border border-gray-200 dark:border-white/5 hover:border-purple-500/30 hover:bg-purple-50 dark:hover:bg-purple-500/5 transition-all group relative overflow-hidden bg-white dark:bg-transparent shadow-sm dark:shadow-none"
                                                     >
                                                         {/* Decor */}
                                                         <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-bl-[80px] transition-all group-hover:bg-purple-500/10 pointer-events-none" />
 
                                                         <div className="flex justify-between items-start mb-4 relative z-10">
-                                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600/20 to-indigo-600/20 border border-purple-500/20 flex items-center justify-center shadow-lg mt-2">
-                                                                <LayoutGrid className="w-6 h-6 text-purple-400" />
+                                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600/20 to-indigo-600/20 border border-purple-200 dark:border-purple-500/20 flex items-center justify-center shadow-lg mt-2 text-purple-600 dark:text-purple-400">
+                                                                <LayoutGrid className="w-6 h-6" />
                                                             </div>
                                                             <span className={`absolute top-0 right-0 m-4 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${status.color}`}>
                                                                 {status.label}
                                                             </span>
                                                         </div>
 
-                                                        <h3 className="text-xl font-bold text-white mb-2 line-clamp-1 group-hover:text-purple-400 transition-colors" title={batch.batch_name}>
+                                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" title={batch.batch_name}>
                                                             {batch.batch_name}
                                                         </h3>
 
@@ -493,9 +502,9 @@ export default function DeepDiveDashboard() {
                                         </>
                                     ) : (
                                         sections.map((sec, idx) => (
-                                            <button key={idx} onClick={() => handleSectionClick(sec)} className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all text-center">
-                                                <h3 className="text-2xl font-bold">{sec}</h3>
-                                                <p className="text-xs uppercase tracking-widest text-emerald-400">Section</p>
+                                            <button key={idx} onClick={() => handleSectionClick(sec)} className="p-6 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:border-emerald-300 dark:hover:border-emerald-500/30 transition-all text-center shadow-sm dark:shadow-none">
+                                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{sec}</h3>
+                                                <p className="text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Section</p>
                                             </button>
                                         ))
                                     )}
@@ -515,14 +524,14 @@ export default function DeepDiveDashboard() {
                                                 </div>
                                             )}
                                             {students.map((student, idx) => (
-                                                <div key={idx} className="flex justify-between items-center p-4 rounded-xl bg-white/5 border border-white/5">
+                                                <div key={idx} className="flex justify-between items-center p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
                                                     <div>
-                                                        <h4 className="font-bold">{student.student_name || student.name}</h4>
-                                                        <p className="text-sm text-gray-400">{student.uni_reg_id || student.reg_id}</p>
+                                                        <h4 className="font-bold text-gray-900 dark:text-white">{student.student_name || student.name}</h4>
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400">{student.uni_reg_id || student.reg_id}</p>
                                                     </div>
                                                     <button
                                                         onClick={() => startStudentInspection(student)}
-                                                        className="px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg border border-blue-500/30 hover:bg-blue-500/30 transition"
+                                                        className="px-4 py-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg border border-blue-500/20 hover:bg-blue-500/20 transition"
                                                     >
                                                         Deep Dive Result
                                                     </button>

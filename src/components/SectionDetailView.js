@@ -77,20 +77,20 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
     const { section_metadata, course_performance, student_performance } = data;
 
     return (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[#0B0F19] animate-in fade-in slide-in-from-right duration-300 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 dark:bg-[#0B0F19] animate-in fade-in slide-in-from-right duration-300 overflow-hidden">
             {/* Background Effects */}
-            <div className="absolute top-0 right-0 h-[400px] w-[400px] bg-cyan-500/10 blur-[100px] pointer-events-none" />
+            <div className="absolute top-0 right-0 h-[400px] w-[400px] bg-cyan-500/10 blur-[100px] pointer-events-none opacity-50 dark:opacity-100" />
 
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/5 backdrop-blur-xl shrink-0">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-white/5 bg-white/70 dark:bg-white/5 backdrop-blur-xl shrink-0">
                 <div className="flex items-center gap-6">
-                    <button onClick={onBack} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition">
+                    <button onClick={onBack} className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
                         <ArrowLeft className="w-6 h-6" />
                     </button>
                     <div>
-                        <div className="text-xs text-cyan-400 uppercase tracking-wider font-semibold mb-1">Section Analytics</div>
-                        <h2 className="text-3xl font-bold text-white mb-2">{section_metadata?.section_name}</h2>
-                        <div className="flex gap-4 text-sm text-gray-400">
+                        <div className="text-xs text-cyan-600 dark:text-cyan-400 uppercase tracking-wider font-semibold mb-1">Section Analytics</div>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{section_metadata?.section_name}</h2>
+                        <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">
                             <span className="flex items-center gap-2"><Users className="w-4 h-4" /> {section_metadata?.total_students} Students</span>
                             <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> {section_metadata?.total_courses} Courses</span>
                         </div>
@@ -100,19 +100,19 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
 
             <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
                 {/* LEFT: Course Performance */}
-                <div className="w-full md:w-80 p-6 border-r border-white/5 bg-black/20 overflow-y-auto custom-scrollbar shrink-0">
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-cyan-400" /> Course Performance
+                <div className="w-full md:w-80 p-6 border-r border-gray-200 dark:border-white/5 bg-gray-100 dark:bg-black/20 overflow-y-auto custom-scrollbar shrink-0">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-cyan-600 dark:text-cyan-400" /> Course Performance
                     </h3>
                     <div className="space-y-4">
                         {course_performance?.map(course => (
-                            <div key={course.course_id} className="p-4 rounded-xl bg-white/5 border border-white/5">
-                                <h4 className="font-bold text-white text-sm mb-2">{course.course_name}</h4>
+                            <div key={course.course_id} className="p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                <h4 className="font-bold text-gray-900 dark:text-white text-sm mb-2">{course.course_name}</h4>
                                 <div className="flex justify-between items-end mb-1">
-                                    <span className="text-xs text-gray-500">Avg Score</span>
-                                    <span className="text-xl font-bold text-cyan-400">{course.average_score}%</span>
+                                    <span className="text-xs text-gray-500 dark:text-gray-500">Avg Score</span>
+                                    <span className="text-xl font-bold text-cyan-600 dark:text-cyan-400">{course.average_score}%</span>
                                 </div>
-                                <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                <div className="w-full bg-gray-200 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
                                     <div className="bg-cyan-500 h-full rounded-full" style={{ width: `${course.average_score}%` }} />
                                 </div>
                             </div>
@@ -122,60 +122,60 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
 
                 {/* RIGHT: Student Table */}
                 <div className="flex-1 p-6 overflow-hidden flex flex-col">
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <Users className="w-5 h-5 text-purple-400" /> Student Performance
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-purple-500 dark:text-purple-400" /> Student Performance
                     </h3>
 
-                    <div className="flex-1 overflow-auto custom-scrollbar border border-white/10 rounded-xl bg-white/5">
+                    <div className="flex-1 overflow-auto custom-scrollbar border border-gray-200 dark:border-white/10 rounded-xl bg-white dark:bg-white/5 shadow-sm dark:shadow-none">
                         <table className="w-full text-left border-collapse">
-                            <thead className="bg-white/5 sticky top-0 backdrop-blur-md z-10">
+                            <thead className="bg-gray-50 dark:bg-white/5 sticky top-0 backdrop-blur-md z-10">
                                 <tr>
-                                    <th className="p-4 text-sm font-semibold text-gray-300 cursor-pointer hover:bg-white/5" onClick={() => requestSort('student_name')}>
+                                    <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300 cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5" onClick={() => requestSort('student_name')}>
                                         Student Name <ArrowUpDown className="w-3 h-3 inline ml-1 opacity-50" />
                                     </th>
-                                    <th className="p-4 text-sm font-semibold text-gray-300">Reg ID</th>
-                                    <th className="p-4 text-sm font-semibold text-gray-300 text-center cursor-pointer hover:bg-white/5" onClick={() => requestSort('overall_progress')}>
+                                    <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300">Reg ID</th>
+                                    <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5" onClick={() => requestSort('overall_progress')}>
                                         Progress <ArrowUpDown className="w-3 h-3 inline ml-1 opacity-50" />
                                     </th>
                                     {/* Dynamic Course Headers */}
                                     {course_performance?.map(c => (
-                                        <th key={c.course_id} className="p-4 text-sm font-semibold text-gray-300 text-center border-l border-white/5">
+                                        <th key={c.course_id} className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300 text-center border-l border-gray-200 dark:border-white/5">
                                             {c.course_name}
                                         </th>
                                     ))}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/5">
+                            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
                                 {sortedStudents.map(student => (
-                                    <tr key={student.student_id} className="hover:bg-white/5 transition-colors group">
+                                    <tr key={student.student_id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group">
                                         <td className="p-4">
-                                            <div className="font-medium text-white group-hover:text-cyan-400 transition-colors pointer cursor-pointer" onClick={() => onStudentSelect(student)}>
+                                            <div className="font-medium text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors pointer cursor-pointer" onClick={() => onStudentSelect(student)}>
                                                 {student.student_name}
                                             </div>
                                         </td>
-                                        <td className="p-4 text-sm text-gray-400 font-mono">{student.uni_reg_id}</td>
+                                        <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{student.uni_reg_id}</td>
                                         <td className="p-4 text-center">
-                                            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-white/5 border border-white/10">
+                                            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
                                                 <div className={`w-2 h-2 rounded-full ${student.overall_progress > 75 ? 'bg-emerald-500' : student.overall_progress > 40 ? 'bg-yellow-500' : 'bg-red-500'}`} />
-                                                <span className="text-sm font-bold text-white">{student.overall_progress}%</span>
+                                                <span className="text-sm font-bold text-gray-900 dark:text-white">{student.overall_progress}%</span>
                                             </div>
                                         </td>
                                         {/* Dynamic Course Cells */}
                                         {course_performance?.map(c => {
                                             const courseData = student.courses.find(sc => sc.course_id === c.course_id);
                                             return (
-                                                <td key={c.course_id} className="p-4 text-center border-l border-white/5">
+                                                <td key={c.course_id} className="p-4 text-center border-l border-gray-200 dark:border-white/5">
                                                     {courseData ? (
                                                         <div className="flex flex-col items-center">
-                                                            <span className="font-bold text-white">{courseData.score}</span>
+                                                            <span className="font-bold text-gray-900 dark:text-white">{courseData.score}</span>
                                                             {courseData.status !== 'N/A' && (
-                                                                <span className={`text-[10px] px-1.5 rounded uppercase tracking-wider font-bold ${courseData.status === 'Pass' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                                                                <span className={`text-[10px] px-1.5 rounded uppercase tracking-wider font-bold ${courseData.status === 'Pass' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'
                                                                     }`}>
                                                                     {courseData.status}
                                                                 </span>
                                                             )}
                                                         </div>
-                                                    ) : <span className="text-gray-600">-</span>}
+                                                    ) : <span className="text-gray-400 dark:text-gray-600">-</span>}
                                                 </td>
                                             );
                                         })}

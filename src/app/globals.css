@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* Light mode (optional fallback, but we focus on dark mode for this app) */
   --background: #f8fafc;
@@ -25,25 +27,29 @@
   --color-card-foreground: var(--card-foreground);
 }
 
-/* Force Dark Mode Theme for this app */
+/* Base Theme Styles */
 body {
-  background: radial-gradient(circle at top center, #1e293b, #0B0F19);
-  color: #f1f5f9;
+  @apply bg-gray-50 text-gray-900 dark:bg-[#0B0F19] dark:text-gray-100;
   font-family: var(--font-jakarta), sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark Mode Background Gradient */
+html.dark body {
+  background: radial-gradient(circle at top center, #1e293b, #0B0F19);
 }
 
 /* Glassmorphism Utilities */
+/* Glassmorphism Utilities */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.05);
+  @apply bg-white/70 dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .glass-card {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  @apply bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm dark:shadow-none;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
 }
