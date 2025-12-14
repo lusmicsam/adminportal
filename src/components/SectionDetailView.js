@@ -4,7 +4,7 @@ import { CircularProgress } from './CircularProgress';
 import { Skeleton, SectionDetailSkeleton } from './Skeletons';
 import { API_CONFIG } from '../utils/api';
 
-export default function SectionDetailView({ section, onBack, onStudentSelect }) {
+export default function SectionDetailView({ section, teachers = [], onBack, onStudentSelect }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [sortConfig, setSortConfig] = useState({ key: 'overall_progress', direction: 'asc' });

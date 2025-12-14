@@ -7,9 +7,9 @@ import { BatchSkeleton, TeacherSkeleton, ListSkeleton, Skeleton, SectionSkeleton
 import StudentDetailView from '../../../components/StudentDetailView';
 import TeacherDetailView from '../../../components/TeacherDetailView'; // Added
 import { Users, LayoutGrid, Layers, GraduationCap, Loader2, LogOut, ChevronRight, Search, FileText, Clock, AlertCircle } from "lucide-react";
-import Link from 'next/link'; // Added
-
+import Link from 'next/link';
 import SectionDetailView from '../../../components/SectionDetailView';
+import BatchDetailView from '../../../components/BatchDetailView';
 
 export default function DeepDiveDashboard() {
     const { user, logout, loading: authLoading } = useAuth();
@@ -31,6 +31,7 @@ export default function DeepDiveDashboard() {
     const [inspectingStudent, setInspectingStudent] = useState(null);
     const [inspectingTeacher, setInspectingTeacher] = useState(null);
     const [inspectingSection, setInspectingSection] = useState(null);
+    const [inspectingBatch, setInspectingBatch] = useState(null);
 
     // 1. Batch/Course Navigation
     const [selectedBatch, setSelectedBatch] = useState(null);
@@ -108,11 +109,22 @@ export default function DeepDiveDashboard() {
                 });
                 const data = await res.json();
                 const found = data.data || data;
+
+                // Normalization Helper
+                const normalizeStudent = (s) => {
+                    if (!s) return null;
+                    return {
+                        ...s,
+                        student_id: s.student_id || s.uuid || s._id,
+                        uni_reg_id: s.uni_reg_id || s.reg_id
+                    };
+                };
+
                 // Strict check: if no ID, it's not a valid student
                 if (Array.isArray(found)) {
-                    setStudents(found.filter(s => s && (s.uni_reg_id || s.reg_id || s.student_id)));
-                } else if (found && (found.uni_reg_id || found.reg_id || found.student_id)) {
-                    setStudents([found]);
+                    setStudents(found.map(normalizeStudent).filter(s => s && (s.uni_reg_id || s.student_id)));
+                } else if (found && (found.uni_reg_id || found.reg_id || found.student_id || found.uuid)) {
+                    setStudents([normalizeStudent(found)]);
                 } else {
                     setStudents([]);
                     setShowError(true);
@@ -133,6 +145,10 @@ export default function DeepDiveDashboard() {
 
     const handleSectionClick = (sectionName) => {
         setInspectingSection({ section_name: sectionName, batch_name: 'Active Sections' });
+    };
+
+    const handleBatchClick = (batch) => {
+        setInspectingBatch(batch);
     };
 
     // --- Deep Dive Actions ---
@@ -204,6 +220,15 @@ export default function DeepDiveDashboard() {
         <div className="min-h-screen bg-[#0B0F19] text-gray-100 font-sans selection:bg-cyan-500/30">
             {/* Deep Dive Views (Overlay) */}
 
+            {/* LEVEL 1: Batch Detail View */}
+            {inspectingBatch && !inspectingSection && !inspectingStudent && (
+                <BatchDetailView
+                    batch={inspectingBatch}
+                    onBack={() => setInspectingBatch(null)}
+                    onSectionSelect={(sectionName) => handleSectionClick(sectionName)}
+                />
+            )}
+
             {inspectingTeacher && (
                 <TeacherDetailView
                     teacher={inspectingTeacher}
@@ -222,10 +247,13 @@ export default function DeepDiveDashboard() {
             {inspectingSection && !inspectingStudent && (
                 <SectionDetailView
                     section={inspectingSection}
+                    teachers={teachers.filter(t =>
+                        t.assigned_section?.includes(
+                            typeof inspectingSection === 'string' ? inspectingSection : inspectingSection.section_name
+                        )
+                    )}
                     onBack={() => setInspectingSection(null)}
-                    onStudentSelect={(student) => {
-                        setInspectingStudent(student);
-                    }}
+                    onStudentSelect={setInspectingStudent}
                 />
             )}
 
@@ -400,7 +428,7 @@ export default function DeepDiveDashboard() {
                                                 (
                                                     <button
                                                         key={batch.batch_id}
-                                                        onClick={() => openBatchModal(batch.batch_id)}
+                                                        onClick={() => handleBatchClick(batch)}
                                                         className="text-left w-full h-full glass-panel p-5 rounded-2xl border border-white/5 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all group relative overflow-hidden"
                                                     >
                                                         {/* Decor */}

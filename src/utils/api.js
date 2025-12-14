@@ -15,6 +15,7 @@ export const API_CONFIG = {
         myTeachers: '/api/university/admin/my-teachers',
         courseStructure: (courseId) => `/api/university/admin/course-structure/${courseId}`,
         sectionAnalytics: (sectionName) => `/api/university/admin/section-analytics/${sectionName}`,
+        subUnitDetails: '/api/university/admin/analytics/sub-unit-details',
     },
 
     // Master Data

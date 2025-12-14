@@ -15,6 +15,10 @@ const nextConfig = {
         destination: 'https://ap-is-seven.vercel.app/api/university/admin/course-structure/:path*',
       },
       {
+        source: '/api/proxy/admin/api/university/admin/analytics/sub-unit-details',
+        destination: 'https://ap-is-seven.vercel.app/api/university/admin/analytics/sub-unit-details',
+      },
+      {
         source: '/api/proxy/admin/:path*',
         destination: 'https://ap-3fqqyqoo8-ujjwal16895s-projects.vercel.app/:path*',
       },
