@@ -4,11 +4,11 @@
   /* Light mode (optional fallback, but we focus on dark mode for this app) */
   --background: #f8fafc;
   --foreground: #0f172a;
-  
+
   /* Brand Colors */
   --primary: #3b82f6;
   --primary-foreground: #ffffff;
-  
+
   --card: #ffffff;
   --card-foreground: #0f172a;
 }
@@ -17,10 +17,10 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-jakarta);
-  
+
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  
+
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
 }
@@ -31,6 +31,7 @@ body {
   color: #f1f5f9;
   font-family: var(--font-jakarta), sans-serif;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* Glassmorphism Utilities */

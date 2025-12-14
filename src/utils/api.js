@@ -14,6 +14,7 @@ export const API_CONFIG = {
         myBatches: '/api/university/admin/my-batches',
         myTeachers: '/api/university/admin/my-teachers',
         courseStructure: (courseId) => `/api/university/admin/course-structure/${courseId}`,
+        sectionAnalytics: (sectionName) => `/api/university/admin/section-analytics/${sectionName}`,
     },
 
     // Master Data

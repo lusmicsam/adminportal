@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { API_CONFIG } from '../../../utils/api';
-import { BatchSkeleton, TeacherSkeleton, ListSkeleton, Skeleton, SectionSkeleton } from '../../../components/Skeletons';
-import { Users, LayoutGrid, Layers, GraduationCap, Loader2, LogOut, ChevronRight, Search, FileText, Clock, AlertCircle } from "lucide-react";
-
+import { BatchSkeleton, TeacherSkeleton, ListSkeleton, Skeleton, SectionSkeleton, DashboardSkeleton } from '../../../components/Skeletons';
 import StudentDetailView from '../../../components/StudentDetailView';
+import TeacherDetailView from '../../../components/TeacherDetailView'; // Added
+import { Users, LayoutGrid, Layers, GraduationCap, Loader2, LogOut, ChevronRight, Search, FileText, Clock, AlertCircle } from "lucide-react";
+import Link from 'next/link'; // Added
+
 import SectionDetailView from '../../../components/SectionDetailView';
 
 export default function DeepDiveDashboard() {
@@ -27,6 +29,7 @@ export default function DeepDiveDashboard() {
 
     // --- Deep Dive States ---
     const [inspectingStudent, setInspectingStudent] = useState(null);
+    const [inspectingTeacher, setInspectingTeacher] = useState(null);
     const [inspectingSection, setInspectingSection] = useState(null);
 
     // 1. Batch/Course Navigation
@@ -187,11 +190,7 @@ export default function DeepDiveDashboard() {
     };
 
     if (authLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-[#0B0F19] text-white">
-                <Loader2 className="w-8 h-8 animate-spin text-cyan-500" />
-            </div>
-        );
+        return <DashboardSkeleton />;
     }
 
     if (!user) return null;
@@ -204,6 +203,15 @@ export default function DeepDiveDashboard() {
     return (
         <div className="min-h-screen bg-[#0B0F19] text-gray-100 font-sans selection:bg-cyan-500/30">
             {/* Deep Dive Views (Overlay) */}
+
+            {inspectingTeacher && (
+                <TeacherDetailView
+                    teacher={inspectingTeacher}
+                    onBack={() => setInspectingTeacher(null)}
+                    onSectionSelect={(section) => handleSectionClick(section)}
+                />
+            )}
+
             {inspectingStudent && (
                 <StudentDetailView
                     student={inspectingStudent}
@@ -221,12 +229,13 @@ export default function DeepDiveDashboard() {
                 />
             )}
 
+            {/* Background Effects */}
+            <div className="fixed -top-40 -left-48 h-[38rem] w-[38rem] bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
+            <div className="fixed -bottom-44 -right-40 h-[42rem] w-[42rem] bg-indigo-500/10 blur-3xl rounded-full pointer-events-none" />
+
             {/* Main Dashboard Content */}
             <div className={`transition-all duration-300 ${(inspectingStudent || inspectingSection) ? 'opacity-0 pointer-events-none scale-95 fixed inset-0' : 'opacity-100 scale-100'}`}>
-                <div className="min-h-screen relative overflow-hidden text-white p-6 md:p-10 font-sans custom-scrollbar">
-                    {/* Background Effects */}
-                    <div className="fixed -top-40 -left-48 h-[38rem] w-[38rem] bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
-                    <div className="fixed -bottom-44 -right-40 h-[42rem] w-[42rem] bg-indigo-500/10 blur-3xl rounded-full pointer-events-none" />
+                <div className="relative text-white p-6 md:p-10 font-sans">
 
                     <div className="max-w-7xl mx-auto relative z-10 space-y-8">
 
@@ -332,15 +341,32 @@ export default function DeepDiveDashboard() {
                                                         </div>
                                                     </div>
                                                     <div className="space-y-3 mb-6 bg-black/20 p-4 rounded-xl border border-white/5">
-                                                        <div className="text-sm text-gray-400 flex justify-between">
+                                                        <div className="text-sm text-gray-400 flex justify-between items-center">
                                                             <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Reg ID</span>
                                                             <span className="font-mono text-white">{t.uni_reg_id || 'N/A'}</span>
                                                         </div>
 
+                                                        {/* Assigned Sections */}
+                                                        <div>
+                                                            <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Sections</div>
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                {t.assigned_section && Array.isArray(t.assigned_section) && t.assigned_section.length > 0 ? (
+                                                                    t.assigned_section.map((sec, i) => (
+                                                                        <span key={i} className="px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-300 font-medium">
+                                                                            {sec}
+                                                                        </span>
+                                                                    ))
+                                                                ) : (
+                                                                    <span className="text-xs text-gray-600 italic">No sections</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                <button className="w-full py-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 text-sm font-medium border border-cyan-500/20 hover:bg-cyan-500/20 mt-auto transition-all flex items-center justify-center gap-2">
+                                                <button
+                                                    onClick={() => setInspectingTeacher(t)}
+                                                    className="w-full py-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 text-sm font-medium border border-cyan-500/20 hover:bg-cyan-500/20 mt-auto transition-all flex items-center justify-center gap-2">
                                                     View Details <ChevronRight className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -439,7 +465,7 @@ export default function DeepDiveDashboard() {
                                         </>
                                     ) : (
                                         sections.map((sec, idx) => (
-                                            <button key={idx} onClick={() => openSectionModal(sec)} className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all text-center">
+                                            <button key={idx} onClick={() => handleSectionClick(sec)} className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all text-center">
                                                 <h3 className="text-2xl font-bold">{sec}</h3>
                                                 <p className="text-xs uppercase tracking-widest text-emerald-400">Section</p>
                                             </button>
@@ -536,7 +562,16 @@ export default function DeepDiveDashboard() {
                             </div>
                         </div>
                     )}
+
                 </div>
+
+                {/* Student Deep Dive Overlay */}
+                {inspectingStudent && (
+                    <StudentDetailView
+                        student={inspectingStudent}
+                        onBack={() => setInspectingStudent(null)}
+                    />
+                )}
             </div>
         </div>
     );

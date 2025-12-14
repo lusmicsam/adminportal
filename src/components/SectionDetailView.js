@@ -1,172 +1,188 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, BookOpen, Users, TrendingUp, AlertCircle, Search, ArrowUpDown } from 'lucide-react';
 import { CircularProgress } from './CircularProgress';
-import { Skeleton } from './Skeletons';
+import { Skeleton, SectionDetailSkeleton } from './Skeletons';
+import { API_CONFIG } from '../utils/api';
 
 export default function SectionDetailView({ section, onBack, onStudentSelect }) {
-    const [courses, setCourses] = useState([]);
-    const [students, setStudents] = useState([]);
+    const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [sortOrder, setSortOrder] = useState('asc'); // 'asc' for seeing who is behind (low %)
+    const [sortConfig, setSortConfig] = useState({ key: 'overall_progress', direction: 'asc' });
 
-    // Mock Data Load (Replace with real API)
     useEffect(() => {
-        const loadData = async () => {
+        const fetchAnalytics = async () => {
             setLoading(true);
-            await new Promise(r => setTimeout(r, 800)); // Simulate delay
+            try {
+                // section is just the string name, e.g. "edutest02"
+                // or if it's an object, access the name property
+                const sectionName = typeof section === 'string' ? section : section.section_name || section;
 
-            // 1. Mock Active Courses
-            setCourses([
-                { id: 1, name: 'Intro to Programming', code: 'CS101', active_students: 45 },
-                { id: 2, name: 'Data Structures', code: 'CS102', active_students: 42 },
-                { id: 3, name: 'Web Development', code: 'CS201', active_students: 38 },
-            ]);
+                // Construct URL correctly with the base URL for admin proxy if needed, 
+                // but usually API_CONFIG should handle full path or we prepend the base.
+                // Assuming API_CONFIG.admin.sectionAnalytics returns the path.
+                // We need to verify if we need to prepend strict base URL or if the proxy handles it.
+                // Looking at api.js, 'admin' base is '/api/proxy/admin'. But the endpoints in 'admin' object are full paths?
+                // Actually 'admin' object has full paths like '/api/university/admin/...'. 
+                // Let's rely on the pattern used elsewhere.
 
-            // 2. Mock Students with Progress
-            const mockStudents = Array.from({ length: 20 }).map((_, i) => ({
-                id: `STU${1000 + i}`,
-                name: `Student ${i + 1}`,
-                completion: Math.floor(Math.random() * 100),
-                courses_completed: Math.floor(Math.random() * 5),
-                last_active: '2 hours ago'
-            }));
-            setStudents(mockStudents);
-            setLoading(false);
+                const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionAnalytics(encodeURIComponent(sectionName))}`;
+                console.log("Fetching Section Analytics URL:", url);
+                const res = await fetch(url, {
+                    credentials: 'include'
+                });
+                const json = await res.json();
+                if (json.success) {
+                    setData(json.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch section analytics:", error);
+            } finally {
+                setLoading(false);
+            }
         };
-        loadData();
+
+        if (section) {
+            fetchAnalytics();
+        }
     }, [section]);
 
     // Sorting Logic
-    const sortedStudents = [...students].sort((a, b) => {
-        return sortOrder === 'asc' ? a.completion - b.completion : b.completion - a.completion;
-    });
+    const sortedStudents = React.useMemo(() => {
+        if (!data?.student_performance) return [];
+        let sortable = [...data.student_performance];
+        if (sortConfig.key) {
+            sortable.sort((a, b) => {
+                if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        return sortable;
+    }, [data, sortConfig]);
+
+    const requestSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    if (loading) {
+        return <SectionDetailSkeleton />;
+    }
+
+    if (!data) return null;
+
+    const { section_metadata, course_performance, student_performance } = data;
 
     return (
-        <div className="absolute inset-0 z-50 flex flex-col bg-[#0B0F19] animate-in fade-in slide-in-from-right duration-300">
-            {/* Background Effects (Matches Dashboard) */}
-            <div className="fixed -top-40 -left-48 h-[38rem] w-[38rem] bg-pink-500/10 blur-3xl rounded-full pointer-events-none" />
-            <div className="fixed -bottom-44 -right-40 h-[42rem] w-[42rem] bg-purple-500/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="fixed inset-0 z-50 flex flex-col bg-[#0B0F19] animate-in fade-in slide-in-from-right duration-300 overflow-hidden">
+            {/* Background Effects */}
+            <div className="absolute top-0 right-0 h-[400px] w-[400px] bg-cyan-500/10 blur-[100px] pointer-events-none" />
 
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/5 backdrop-blur-xl sticky top-0 z-10 relative">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={onBack}
-                        className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition"
-                    >
+            <div className="flex items-center justify-between p-6 border-b border-white/5 bg-white/5 backdrop-blur-xl shrink-0">
+                <div className="flex items-center gap-6">
+                    <button onClick={onBack} className="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition">
                         <ArrowLeft className="w-6 h-6" />
                     </button>
                     <div>
-                        <div className="text-xs text-pink-400 uppercase tracking-wider font-semibold mb-1">Section Analytics</div>
-                        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-                            {section.section_name || 'Section Name'}
-                            <span className="text-sm font-normal px-3 py-1 rounded-full bg-white/5 text-gray-300 border border-white/10 font-mono">
-                                {section.batch_name || 'Batch A'}
-                            </span>
-                        </h2>
+                        <div className="text-xs text-cyan-400 uppercase tracking-wider font-semibold mb-1">Section Analytics</div>
+                        <h2 className="text-3xl font-bold text-white mb-2">{section_metadata?.section_name}</h2>
+                        <div className="flex gap-4 text-sm text-gray-400">
+                            <span className="flex items-center gap-2"><Users className="w-4 h-4" /> {section_metadata?.total_students} Students</span>
+                            <span className="flex items-center gap-2"><BookOpen className="w-4 h-4" /> {section_metadata?.total_courses} Courses</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-hidden flex flex-col md:flex-row relative z-10">
-
-                {/* LEFT: Active Courses Summary */}
-                <div className="w-full md:w-1/3 p-6 border-r border-white/5 overflow-y-auto custom-scrollbar bg-black/10 backdrop-blur-md">
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                        <BookOpen className="w-5 h-5 text-pink-400" />
-                        Active Courses
+            <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                {/* LEFT: Course Performance */}
+                <div className="w-full md:w-80 p-6 border-r border-white/5 bg-black/20 overflow-y-auto custom-scrollbar shrink-0">
+                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-cyan-400" /> Course Performance
                     </h3>
-
-                    {loading ? (
-                        <div className="space-y-3">
-                            {[1, 2].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl bg-white/5" />)}
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {courses.map(course => (
-                                <div key={course.id} className="p-4 rounded-xl bg-gradient-to-br from-white/5 to-white/0 border border-white/5 hover:border-pink-500/30 transition-all">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="font-bold text-white">{course.name}</div>
-                                        <span className="text-xs font-mono text-gray-500 bg-black/20 px-2 py-0.5 rounded">{course.code}</span>
-                                    </div>
-                                    <div className="text-sm text-gray-400">
-                                        Active Students: <span className="text-white">{course.active_students}</span>
-                                    </div>
-                                    <div className="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
-                                        <div className="bg-pink-500 h-full rounded-full" style={{ width: '65%' }} />
-                                    </div>
+                    <div className="space-y-4">
+                        {course_performance?.map(course => (
+                            <div key={course.course_id} className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                <h4 className="font-bold text-white text-sm mb-2">{course.course_name}</h4>
+                                <div className="flex justify-between items-end mb-1">
+                                    <span className="text-xs text-gray-500">Avg Score</span>
+                                    <span className="text-xl font-bold text-cyan-400">{course.average_score}%</span>
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                                <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                    <div className="bg-cyan-500 h-full rounded-full" style={{ width: `${course.average_score}%` }} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                {/* RIGHT: Student Progress List */}
+                {/* RIGHT: Student Table */}
                 <div className="flex-1 p-6 overflow-hidden flex flex-col">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                        <div>
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                <Users className="w-5 h-5 text-purple-400" />
-                                Student Progress
-                            </h3>
-                            <p className="text-gray-400 text-sm">Identifying students who might be falling behind.</p>
-                        </div>
+                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-purple-400" /> Student Performance
+                    </h3>
 
-                        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-lg border border-white/10">
-                            <span className="text-xs text-gray-500 font-medium px-3">Sort by Progress:</span>
-                            <button
-                                onClick={() => setSortOrder('asc')}
-                                className={`px-3 py-1.5 rounded-md text-sm transition-colors flex items-center gap-1.5 ${sortOrder === 'asc' ? 'bg-pink-500/20 text-pink-400' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                <ArrowUpDown className="w-3.5 h-3.5" /> Lowest First
-                            </button>
-                            <button
-                                onClick={() => setSortOrder('desc')}
-                                className={`px-3 py-1.5 rounded-md text-sm transition-colors flex items-center gap-1.5 ${sortOrder === 'desc' ? 'bg-purple-500/20 text-purple-400' : 'text-gray-400 hover:text-white'}`}
-                            >
-                                <ArrowUpDown className="w-3.5 h-3.5" /> Highest First
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                        {loading ? (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                {[1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-20 rounded-xl bg-white/5" />)}
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="flex-1 overflow-auto custom-scrollbar border border-white/10 rounded-xl bg-white/5">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-white/5 sticky top-0 backdrop-blur-md z-10">
+                                <tr>
+                                    <th className="p-4 text-sm font-semibold text-gray-300 cursor-pointer hover:bg-white/5" onClick={() => requestSort('student_name')}>
+                                        Student Name <ArrowUpDown className="w-3 h-3 inline ml-1 opacity-50" />
+                                    </th>
+                                    <th className="p-4 text-sm font-semibold text-gray-300">Reg ID</th>
+                                    <th className="p-4 text-sm font-semibold text-gray-300 text-center cursor-pointer hover:bg-white/5" onClick={() => requestSort('overall_progress')}>
+                                        Progress <ArrowUpDown className="w-3 h-3 inline ml-1 opacity-50" />
+                                    </th>
+                                    {/* Dynamic Course Headers */}
+                                    {course_performance?.map(c => (
+                                        <th key={c.course_id} className="p-4 text-sm font-semibold text-gray-300 text-center border-l border-white/5">
+                                            {c.course_name}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
                                 {sortedStudents.map(student => (
-                                    <button
-                                        key={student.id}
-                                        onClick={() => onStudentSelect(student)}
-                                        className="group flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-pink-500/30 transition-all text-left"
-                                    >
-                                        <div className="relative">
-                                            <CircularProgress
-                                                percentage={student.completion}
-                                                size={56}
-                                                strokeWidth={4}
-                                                color={student.completion < 30 ? 'orange' : student.completion < 70 ? 'blue' : 'emerald'}
-                                            />
-                                            {student.completion < 30 && (
-                                                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full border border-[#0B0F19]">!</div>
-                                            )}
-                                        </div>
-
-                                        <div className="flex-1">
-                                            <div className="flex justify-between items-start">
-                                                <h4 className="font-bold text-white group-hover:text-pink-400 transition-colors">{student.name}</h4>
-                                                <span className="text-xs text-gray-500 font-mono bg-black/20 px-1.5 py-0.5 rounded">{student.id}</span>
+                                    <tr key={student.student_id} className="hover:bg-white/5 transition-colors group">
+                                        <td className="p-4">
+                                            <div className="font-medium text-white group-hover:text-cyan-400 transition-colors pointer cursor-pointer" onClick={() => onStudentSelect(student)}>
+                                                {student.student_name}
                                             </div>
-                                            <div className="text-xs text-gray-400 mt-1">
-                                                Courses Completed: <span className="text-white">{student.courses_completed}</span> • Active: {student.last_active}
+                                        </td>
+                                        <td className="p-4 text-sm text-gray-400 font-mono">{student.uni_reg_id}</td>
+                                        <td className="p-4 text-center">
+                                            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-white/5 border border-white/10">
+                                                <div className={`w-2 h-2 rounded-full ${student.overall_progress > 75 ? 'bg-emerald-500' : student.overall_progress > 40 ? 'bg-yellow-500' : 'bg-red-500'}`} />
+                                                <span className="text-sm font-bold text-white">{student.overall_progress}%</span>
                                             </div>
-                                        </div>
-                                    </button>
+                                        </td>
+                                        {/* Dynamic Course Cells */}
+                                        {course_performance?.map(c => {
+                                            const courseData = student.courses.find(sc => sc.course_id === c.course_id);
+                                            return (
+                                                <td key={c.course_id} className="p-4 text-center border-l border-white/5">
+                                                    {courseData ? (
+                                                        <div className="flex flex-col items-center">
+                                                            <span className="font-bold text-white">{courseData.score}</span>
+                                                            {courseData.status !== 'N/A' && (
+                                                                <span className={`text-[10px] px-1.5 rounded uppercase tracking-wider font-bold ${courseData.status === 'Pass' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                                                                    }`}>
+                                                                    {courseData.status}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : <span className="text-gray-600">-</span>}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
                                 ))}
-                            </div>
-                        )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

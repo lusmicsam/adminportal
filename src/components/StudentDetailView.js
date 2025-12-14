@@ -19,18 +19,48 @@ export default function StudentDetailView({ student, onBack }) {
     const [inspectingSubUnit, setInspectingSubUnit] = useState(null); // Which subunit is active
     const [loadingHistory, setLoadingHistory] = useState(false);
 
-    // Initial Load
+    const [fullStudent, setFullStudent] = useState(student);
+
+    // Initial Load & Lookup
     useEffect(() => {
+        const init = async () => {
+            let currentStudent = student;
+
+            // If missing batch_id, try to fetch full details via lookup
+            if (!currentStudent.batch_id && !currentStudent.batch) {
+                try {
+                    const lookupRes = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.student.lookup}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type: 'uni_reg_id', value: currentStudent.uni_reg_id || currentStudent.reg_id }),
+                        credentials: 'include'
+                    });
+                    const lookupJson = await lookupRes.json();
+                    const found = Array.isArray(lookupJson.data) ? lookupJson.data[0] : lookupJson.data;
+                    if (found) {
+                        currentStudent = { ...currentStudent, ...found };
+                        setFullStudent(currentStudent);
+                    }
+                } catch (e) {
+                    console.error("Lookup failed", e);
+                }
+            } else {
+                setFullStudent(student);
+            }
+
+            if (currentStudent.batch_id || currentStudent.batch) {
+                fetchCourses(currentStudent.batch_id || currentStudent.batch);
+            }
+        };
+
         if (student) {
-            fetchCourses();
+            init();
         }
     }, [student]);
 
-    const fetchCourses = async () => {
+    const fetchCourses = async (batchId) => {
         setLoadingCourses(true);
         try {
-            const batchId = student.batch_id || student.batch;
-            // Handle if no batch ID found?
             if (!batchId) {
                 setCourses([]);
                 return;
@@ -106,7 +136,7 @@ export default function StudentDetailView({ student, onBack }) {
     };
 
     return (
-        <div className="absolute inset-0 z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right duration-300 bg-[#0B0F19]">
+        <div className="fixed inset-0 z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right duration-300 bg-[#0B0F19]">
             {/* Background Effects (Matches Dashboard) */}
             <div className="fixed -top-40 -left-48 h-[38rem] w-[38rem] bg-cyan-500/10 blur-3xl rounded-full pointer-events-none" />
             <div className="fixed -bottom-44 -right-40 h-[42rem] w-[42rem] bg-indigo-500/10 blur-3xl rounded-full pointer-events-none" />
