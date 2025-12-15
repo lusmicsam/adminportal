@@ -205,7 +205,11 @@ export default function StudentDetailView({ student, onBack }) {
                         </span>
                     </h2>
                     <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                        Batch: {student.batch_id || 'N/A'} • Enrolled Courses: {courses.length}
+                        Batch: {
+                            (student.batch_name || student.batch)
+                                ? (student.batch_name || student.batch)
+                                : (student.batch_id && student.batch_id.length < 10 ? student.batch_id : 'N/A')
+                        } • Enrolled Courses: {courses.length}
                     </p>
                 </div>
             </div>
@@ -311,7 +315,7 @@ export default function StudentDetailView({ student, onBack }) {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }
 

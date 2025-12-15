@@ -21,7 +21,7 @@ export default function LoginPage() {
 
 
   // Form States
-  const [regId, setRegId] = useState(""); // This is actually 'email' for the API
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
@@ -35,16 +35,15 @@ export default function LoginPage() {
     clearError();
 
     // Basic validation
-    if (!regId || !password) {
-      setError("Please enter both ID and Password");
+    if (!email || !password) {
+      setError("Please enter both Email and Password");
       return;
     }
 
     setLoading(true);
 
     // Call API Login via AuthContext
-    // Note: API expects 'email' but field is 'regId'. Passing regId as email.
-    const res = await login(regId, password);
+    const res = await login(email, password);
 
     if (res.success) {
       router.push("/admin/dashboard");
@@ -68,7 +67,7 @@ export default function LoginPage() {
           <div className="px-4 py-1.5 rounded-full bg-cyan-500/10 dark:bg-white/5 border border-cyan-500/20 dark:border-white/10 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-cyan-500 dark:bg-emerald-400 animate-pulse" />
             <span className="text-xs font-medium text-cyan-700 dark:text-slate-300 tracking-wide uppercase">
-              Student Results Portal — Teacher Access
+              Student Results Portal — Admin Access
             </span>
           </div>
         </div>
@@ -98,15 +97,15 @@ export default function LoginPage() {
             {/* Reg ID */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-gray-500 dark:text-slate-300 uppercase tracking-wider ml-1">
-                Registration ID
+                Email Address
               </label>
               <div className="relative group">
                 <User className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 dark:text-slate-500 group-focus-within:text-blue-500 dark:group-focus-within:text-blue-400 transition-colors" />
                 <input
                   type="text"
-                  value={regId}
-                  onChange={(e) => { setRegId(e.target.value); clearError(); }}
-                  placeholder="Enter your Reg ID"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); clearError(); }}
+                  placeholder="admin@university.edu"
                   className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all"
                   autoFocus
                 />
@@ -157,7 +156,7 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-xs text-slate-500">
-            For authorized teachers only. All access is logged.
+            For authorized admins only. All access is logged.
           </p>
           <div className="mt-8 flex justify-center">
             <div className="w-8 h-8 rounded-full bg-black border border-white/20 flex items-center justify-center">

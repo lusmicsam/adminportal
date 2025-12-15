@@ -25,6 +25,7 @@ export default function DeepDiveDashboard() {
     // Primary Data Lists
     const [batches, setBatches] = useState([]);
     const [sections, setSections] = useState([]);
+    const [masterSections, setMasterSections] = useState([]); // Cache for client-side search
     const [students, setStudents] = useState([]);
     const [teachers, setTeachers] = useState([]);
     const [masterTeachers, setMasterTeachers] = useState([]); // Cache for client-side search
@@ -86,7 +87,9 @@ export default function DeepDiveDashboard() {
 
     const fetchSections = async () => {
         const data = await fetchWithAuth(`${API_CONFIG.baseUrl.student}${API_CONFIG.masters.sections}`);
-        setSections(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) ? data : [];
+        setSections(list);
+        setMasterSections(list);
     };
 
     const handleSearch = async (e) => {
@@ -95,14 +98,15 @@ export default function DeepDiveDashboard() {
         // Handle Empty Search (Reset)
         if (!searchQuery.trim()) {
             if (view === 'teachers') setTeachers(masterTeachers);
-            // Reset logic for other views if needed
+            if (view === 'sections') setSections(masterSections);
             return;
         }
 
         setLoading(true);
         setHasSearched(true);
-        if (view === 'students') {
-            try {
+
+        try {
+            if (view === 'students') {
                 const res = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.student.lookup}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -131,18 +135,25 @@ export default function DeepDiveDashboard() {
                     setStudents([]);
                     setShowError(true);
                 }
-            } catch (e) { console.error(e); }
-        } else if (view === 'teachers') {
-            // Client-side filtering for teachers
-            const lowerQuery = searchQuery.toLowerCase();
-            const filteredTeachers = masterTeachers.filter(t =>
-                (t.name && t.name.toLowerCase().includes(lowerQuery)) ||
-                (t.faculty_id && String(t.faculty_id).toLowerCase().includes(lowerQuery)) ||
-                (t.reg_id && String(t.reg_id).toLowerCase().includes(lowerQuery))
-            );
-            setTeachers(filteredTeachers);
-        }
-        setLoading(false);
+            } else if (view === 'teachers') {
+                // Client-side filtering for teachers
+                const lowerQuery = searchQuery.toLowerCase();
+                const filteredTeachers = masterTeachers.filter(t =>
+                    (t.teacher_name && t.teacher_name.toLowerCase().includes(lowerQuery)) ||
+                    (t.uni_reg_id && String(t.uni_reg_id).toLowerCase().includes(lowerQuery)) ||
+                    (t.teacher_email && t.teacher_email.toLowerCase().includes(lowerQuery))
+                );
+                setTeachers(filteredTeachers);
+            } else if (view === 'sections') {
+                // Client-side filtering for sections
+                const lowerQuery = searchQuery.toLowerCase();
+                const filteredSections = masterSections.filter(s =>
+                    String(s).toLowerCase().includes(lowerQuery)
+                );
+                setSections(filteredSections);
+            }
+        } catch (e) { console.error("Search Error", e); }
+        finally { setLoading(false); }
     };
 
     const handleSectionClick = (sectionName) => {
@@ -219,7 +230,7 @@ export default function DeepDiveDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 font-sans selection:bg-cyan-500/30">
+        <div className="min-h-screen bg-slate-200 dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 font-sans selection:bg-cyan-500/30">
             {/* Deep Dive Views (Overlay) */}
 
             {/* LEVEL 1: Batch Detail View */}
@@ -307,8 +318,8 @@ export default function DeepDiveDashboard() {
                                     onClick={() => { setView(item.id); setSearchQuery(''); }}
                                     className={`p-5 rounded-2xl border transition-all duration-300 text-left relative overflow-hidden group
                                 ${view === item.id
-                                            ? `bg-${item.color}-50 dark:bg-${item.color}-500/10 border-${item.color}-200 dark:border-${item.color}-500/20 shadow-sm dark:shadow-[0_0_10px_rgba(var(--${item.color}-rgb),0.1)]`
-                                            : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/10'
+                                            ? `bg-${item.color}-100 dark:bg-${item.color}-500/10 border-${item.color}-300 dark:border-${item.color}-500/20 shadow-md dark:shadow-[0_0_10px_rgba(var(--${item.color}-rgb),0.1)]`
+                                            : 'bg-slate-100 dark:bg-white/5 border-slate-300 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/10 shadow-sm'
                                         }`}
                                 >
                                     <div className={`w-12 h-12 rounded-xl mb-3 flex items-center justify-center transition-colors
@@ -336,15 +347,19 @@ export default function DeepDiveDashboard() {
                                 </h2>
 
                                 <div className="flex-1 flex justify-center px-4 md:px-12 w-full">
-                                    {(view === 'students' || view === 'teachers') && (
+                                    {(view === 'students' || view === 'teachers' || view === 'sections') && (
                                         <form onSubmit={handleSearch} className="relative w-full max-w-2xl">
                                             <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-500" />
                                             <input
                                                 type="text"
-                                                placeholder="Search students, teachers..."
+                                                placeholder={
+                                                    view === 'teachers' ? "Search by Name or Reg ID..." :
+                                                        view === 'sections' ? "Search Section Name..." :
+                                                            "Search by Uni Reg ID..."
+                                                }
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl pl-12 pr-4 py-3 text-base focus:border-cyan-500/50 outline-none transition-colors text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                                                className="w-full bg-slate-100 dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-xl pl-12 pr-4 py-3 text-base focus:border-cyan-500/50 outline-none transition-colors text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm"
                                             />
                                         </form>
                                     )}
@@ -366,7 +381,7 @@ export default function DeepDiveDashboard() {
                                         </>
                                     ) : (
                                         teachers.map((t, idx) => (
-                                            <div key={idx} className="p-6 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 flex flex-col justify-between h-full hover:border-cyan-500/30 transition-all group shadow-sm dark:shadow-none">
+                                            <div key={idx} className="p-6 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/5 flex flex-col justify-between h-full hover:border-cyan-500/30 transition-all group shadow-sm dark:shadow-none">
                                                 <div>
                                                     <div className="flex items-center gap-4 mb-6">
                                                         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-cyan-600 dark:text-cyan-400 font-bold shrink-0 text-xl shadow-lg border border-gray-100 dark:border-white/5">
@@ -438,7 +453,7 @@ export default function DeepDiveDashboard() {
                                                     <button
                                                         key={batch.batch_id}
                                                         onClick={() => handleBatchClick(batch)}
-                                                        className="text-left w-full h-full glass-panel p-5 rounded-2xl border border-gray-200 dark:border-white/5 hover:border-purple-500/30 hover:bg-purple-50 dark:hover:bg-purple-500/5 transition-all group relative overflow-hidden bg-white dark:bg-transparent shadow-sm dark:shadow-none"
+                                                        className="text-left w-full h-full glass-panel p-5 rounded-2xl border border-slate-300 dark:border-white/5 hover:border-purple-500/30 hover:bg-purple-50 dark:hover:bg-purple-500/5 transition-all group relative overflow-hidden bg-slate-100 dark:bg-transparent shadow-sm dark:shadow-none"
                                                     >
                                                         {/* Decor */}
                                                         <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-bl-[80px] transition-all group-hover:bg-purple-500/10 pointer-events-none" />
@@ -502,7 +517,7 @@ export default function DeepDiveDashboard() {
                                         </>
                                     ) : (
                                         sections.map((sec, idx) => (
-                                            <button key={idx} onClick={() => handleSectionClick(sec)} className="p-6 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:border-emerald-300 dark:hover:border-emerald-500/30 transition-all text-center shadow-sm dark:shadow-none">
+                                            <button key={idx} onClick={() => handleSectionClick(sec)} className="p-6 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:border-emerald-300 dark:hover:border-emerald-500/30 transition-all text-center shadow-sm dark:shadow-none">
                                                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{sec}</h3>
                                                 <p className="text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Section</p>
                                             </button>
@@ -524,7 +539,7 @@ export default function DeepDiveDashboard() {
                                                 </div>
                                             )}
                                             {students.map((student, idx) => (
-                                                <div key={idx} className="flex justify-between items-center p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                                <div key={idx} className="flex justify-between items-center p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/5 shadow-sm dark:shadow-none">
                                                     <div>
                                                         <h4 className="font-bold text-gray-900 dark:text-white">{student.student_name || student.name}</h4>
                                                         <p className="text-sm text-gray-500 dark:text-gray-400">{student.uni_reg_id || student.reg_id}</p>
