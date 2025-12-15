@@ -44,6 +44,19 @@ export default function DeepDiveDashboard() {
     const [selectedSection, setSelectedSection] = useState(null);
     const [sectionStudents, setSectionStudents] = useState([]);
 
+    // 3. Cache for Section Completion
+    const [sectionCompletionCache, setSectionCompletionCache] = useState({}); // { sectionName: { courseId: completion% } }
+
+    const updateSectionCache = (sectionName, courseId, completion) => {
+        setSectionCompletionCache(prev => ({
+            ...prev,
+            [sectionName]: {
+                ...(prev[sectionName] || {}),
+                [courseId]: completion
+            }
+        }));
+    };
+
 
     // Initial Data Fetch
     useEffect(() => {
@@ -169,9 +182,19 @@ export default function DeepDiveDashboard() {
     const loadBatchCourses = async (batchId) => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.courses(batchId)}`);
+            const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.getPracticeCoursesByBatch}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ batch_id: batchId }),
+                credentials: 'include'
+            });
             const data = await res.json();
-            return data.data || data || [];
+
+            if (data.success && data.data) {
+                if (Array.isArray(data.data)) return data.data;
+                if (data.data.courses) return data.data.courses;
+            }
+            return [];
         } catch (e) { return []; }
         finally { setLoading(false); }
     };
@@ -247,6 +270,9 @@ export default function DeepDiveDashboard() {
                     teacher={inspectingTeacher}
                     onBack={() => setInspectingTeacher(null)}
                     onSectionSelect={(section) => handleSectionClick(section)}
+                    cache={sectionCompletionCache}
+                    onUpdateCache={updateSectionCache}
+                    user={user}
                 />
             )}
 
@@ -267,6 +293,9 @@ export default function DeepDiveDashboard() {
                     )}
                     onBack={() => setInspectingSection(null)}
                     onStudentSelect={setInspectingStudent}
+                    user={user}
+                    cache={sectionCompletionCache}
+                    onUpdateCache={updateSectionCache}
                 />
             )}
 

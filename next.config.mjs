@@ -19,6 +19,22 @@ const nextConfig = {
         destination: 'https://ap-is-seven.vercel.app/api/university/admin/analytics/sub-unit-details',
       },
       {
+        source: '/api/proxy/admin/api/auth/teacher/teacher/analytics/unit-completion',
+        destination: 'https://ap-is-seven.vercel.app/api/auth/teacher/teacher/analytics/unit-completion',
+      },
+      {
+        source: '/api/proxy/admin/api/auth/teacher/teacher/analytics/section-completion',
+        destination: 'https://ap-is-seven.vercel.app/api/auth/teacher/teacher/analytics/section-completion',
+      },
+      {
+        source: '/api/proxy/admin/api/university/admin/get-sections-by-batch',
+        destination: 'https://ap-is-seven.vercel.app/api/university/admin/get-sections-by-batch',
+      },
+      {
+        source: '/api/proxy/admin/api/university/admin/get-practice-courses-by-batch',
+        destination: 'https://ap-is-seven.vercel.app/api/university/admin/get-practice-courses-by-batch',
+      },
+      {
         source: '/api/proxy/admin/:path*',
         destination: 'https://ap-3fqqyqoo8-ujjwal16895s-projects.vercel.app/:path*',
       },

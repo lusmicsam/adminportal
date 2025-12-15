@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronDown, ChevronRight, BookOpen, Clock, AlertCircle, Award, Activity, Globe, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight, BookOpen, Clock, AlertCircle, Award, Activity, Globe, ArrowRight, TrendingUp } from 'lucide-react';
 import { CircularProgress } from './CircularProgress';
 import { API_CONFIG } from '../utils/api';
 import { Skeleton } from './Skeletons';
@@ -17,23 +17,28 @@ export default function StudentDetailView({ student, onBack }) {
     const [selectedUnit, setSelectedUnit] = useState(null); // Expanded Unit ID
     const [subUnitHistory, setSubUnitHistory] = useState(null); // Data for right panel
     const [inspectingSubUnit, setInspectingSubUnit] = useState(null); // Which subunit is active
+
+    // Missing States Restored
     const [loadingHistory, setLoadingHistory] = useState(false);
-
-    // NEW: Result Type State
     const [resultType, setResultType] = useState('mcq'); // mcq | coding
-
     const [fullStudent, setFullStudent] = useState(student);
+
+    // State for Unit Analytics
+    const [unitCompletions, setUnitCompletions] = useState({}); // { unitId: progress_percentage }
+    const [overallCourseProgress, setOverallCourseProgress] = useState(0);
 
     // Initial Load & Lookup
     useEffect(() => {
         const init = async () => {
+            console.log("StudentDetailView: Init with student", student);
             let currentStudent = student;
 
             // Ensure we have the critical UUID (student_id). If missing, force lookup.
             // Also lookup if batch_id is missing.
             const needsLookup = !currentStudent.student_id && !currentStudent.uuid;
+            const needsBatch = !currentStudent.batch_id && !currentStudent.batch;
 
-            if (needsLookup || (!currentStudent.batch_id && !currentStudent.batch)) {
+            if (needsLookup || needsBatch) {
                 console.log("Missing ID/Batch, performing lookup for:", currentStudent.uni_reg_id || currentStudent.reg_id);
                 try {
                     const lookupRes = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.student.lookup}`, {
@@ -43,6 +48,7 @@ export default function StudentDetailView({ student, onBack }) {
                         credentials: 'include'
                     });
                     const lookupJson = await lookupRes.json();
+
                     const found = Array.isArray(lookupJson.data) ? lookupJson.data[0] : lookupJson.data;
 
                     if (found) {
@@ -60,7 +66,10 @@ export default function StudentDetailView({ student, onBack }) {
             }
 
             if (currentStudent.batch_id || currentStudent.batch) {
+                console.log("Fetching courses for batch:", currentStudent.batch_id || currentStudent.batch);
                 fetchCourses(currentStudent.batch_id || currentStudent.batch);
+            } else {
+                console.error("Cannot fetch courses: Missing batch_id", currentStudent);
             }
         };
 
@@ -69,12 +78,59 @@ export default function StudentDetailView({ student, onBack }) {
         }
     }, [student]);
 
-    // Fetch history when result type changes (and we have a subunit selected)
+    // Fetch history when result type changes OR subunit changes
     useEffect(() => {
         if (inspectingSubUnit && selectedCourse) {
             fetchHistory(inspectingSubUnit.unitId, inspectingSubUnit.subUnitId, resultType);
         }
-    }, [resultType]);
+    }, [resultType, inspectingSubUnit]);
+
+    // NEW: Fetch and calculate granular unit completion
+    const fetchUnitCompletion = async (studentData, courseId, units) => {
+        if (!units || units.length === 0) return;
+
+        const completions = {};
+        let totalCompletion = 0;
+        let fetchedCount = 0;
+
+        // Fetch completion for each unit in parallel
+        await Promise.all(units.map(async (unit) => {
+            try {
+                const payload = {
+                    student_id: studentData.student_id || studentData.uuid || studentData.uni_reg_id || studentData.reg_id,
+                    course_id: courseId,
+                    unit_id: unit.unit_id
+                };
+
+                const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.unitCompletion}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    credentials: 'include'
+                });
+
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const progress = data.data.overall_unit_completion || 0;
+                    completions[unit.unit_id] = progress;
+                    totalCompletion += progress;
+                    fetchedCount++;
+                } else {
+                    completions[unit.unit_id] = 0;
+                }
+            } catch (e) {
+                console.error(`Failed to fetch completion for unit ${unit.unit_id}`, e);
+                completions[unit.unit_id] = 0;
+            }
+        }));
+
+        setUnitCompletions(completions);
+        // Calculate average course progress based on units
+        // If fetchedCount is 0, keep 0.
+        // If we want detailed average: sum(unit%)/totalUnits
+        const calculatedOverall = units.length > 0 ? Math.round(totalCompletion / units.length) : 0;
+        setOverallCourseProgress(calculatedOverall);
+    };
 
     const fetchCourses = async (batchId) => {
         setLoadingCourses(true);
@@ -83,9 +139,20 @@ export default function StudentDetailView({ student, onBack }) {
                 setCourses([]);
                 return;
             }
-            const res = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.courses(batchId)}`);
+            const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.getPracticeCoursesByBatch}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ batch_id: batchId }),
+                credentials: 'include'
+            });
             const data = await res.json();
-            setCourses(data.data || data || []);
+
+            let list = [];
+            if (data.success && data.data) {
+                if (Array.isArray(data.data)) list = data.data;
+                else if (data.data.courses) list = data.data.courses;
+            }
+            setCourses(list);
         } catch (e) {
             console.error(e);
         } finally {
@@ -99,11 +166,18 @@ export default function StudentDetailView({ student, onBack }) {
         setLoadingStructure(true);
         setSubUnitHistory(null);
         setInspectingSubUnit(null);
+        setUnitCompletions({});
+        setOverallCourseProgress(0);
 
         try {
             const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.courseStructure(course.course_id)}`, { credentials: 'include' });
             const data = await res.json();
-            setCourseStructure(data.data || []);
+            const structure = data.data || [];
+            setCourseStructure(structure);
+
+            // Trigger unit completion fetch
+            fetchUnitCompletion(fullStudent, course.course_id, structure);
+
         } catch (e) {
             console.error(e);
             setCourseStructure([]);
@@ -120,10 +194,8 @@ export default function StudentDetailView({ student, onBack }) {
     };
 
     const handleSubUnitClick = (unitId, subUnitId, subUnitData) => {
+        // Just update state; useEffect will handle the fetch (preserving current resultType)
         setInspectingSubUnit({ ...subUnitData, unitId, subUnitId, name: subUnitData.title });
-        // Default to MCQ when switching subunits, or maintain? Let's default to MCQ.
-        setResultType('mcq');
-        fetchHistory(unitId, subUnitId, 'mcq');
     };
 
     const handleResultTypeChange = (type) => {
@@ -140,7 +212,8 @@ export default function StudentDetailView({ student, onBack }) {
                 course_id: selectedCourse.course_id,
                 unit_id: unitId,
                 sub_unit_id: subUnitId,
-                result_type: type
+                result_type: type,
+                attempt: 1 // Default to 1 as required by API
             };
 
             console.log("Fetching History Payload:", payload);
@@ -153,21 +226,35 @@ export default function StudentDetailView({ student, onBack }) {
 
             if (!res.ok) {
                 const errText = await res.text();
-                console.error("History Fetch Error:", res.status, errText);
+                // console.error("History Fetch Error:", res.status, errText); // Silent fail or log
                 try {
-                    const errJson = JSON.parse(errText);
-                    if (errJson.error) alert(`Error: ${errJson.error}`); // Temporary feedback
+                    // const errJson = JSON.parse(errText);
+                    // if (errJson.error) alert(`Error: ${errJson.error}`);
                 } catch (e) { /* ignore */ }
-                throw new Error(`Server returned ${res.status}`);
+                // throw new Error(`Server returned ${res.status}`);
             }
 
             const data = await res.json();
             if (data) {
-                // Handle new Admin API structure: data.data.history_list
-                const historyList = data.data?.history_list || (Array.isArray(data.data) ? data.data : []);
-                setSubUnitHistory(historyList);
+                // Handle Detail Response (Single Object) -> Wrap in List
+                if (data.data && data.data.overview) {
+                    const detail = data.data;
+                    const summaryItem = {
+                        ...detail, // CRITICAL: Preserve full details for cache!
+                        attempt: detail.overview.attempt_number || 1,
+                        attempt_count: detail.overview.attempt_number || 1,
+                        marks_obtained: detail.overview.total_score,
+                        total_marks: detail.overview.max_score,
+                        score: detail.overview.total_score,
+                    };
+                    setSubUnitHistory([summaryItem]);
+                } else {
+                    // Fallback to List Response
+                    const historyList = data.data?.history_list || (Array.isArray(data.data) ? data.data : []);
+                    setSubUnitHistory(historyList);
+                }
             } else {
-                throw new Error("All fetch attempts failed");
+                setSubUnitHistory([]);
             }
         } catch (e) {
             console.error(e);
@@ -234,7 +321,7 @@ export default function StudentDetailView({ student, onBack }) {
                                 <div className="text-xs text-cyan-600 dark:text-cyan-400 uppercase tracking-wider mb-2">Selected Course</div>
                                 <h3 className="text-2xl font-bold leading-tight text-gray-900 dark:text-white mb-4">{selectedCourse.course_name}</h3>
                                 <div className="flex items-center gap-3 p-3 bg-white dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
-                                    <CircularProgress percentage={selectedCourse.completion_rate || 0} size={48} strokeWidth={4} />
+                                    <CircularProgress percentage={overallCourseProgress} size={48} strokeWidth={4} />
                                     <div>
                                         <div className="text-gray-900 dark:text-white font-bold">Overall Progress</div>
                                         <div className="text-xs text-gray-500 dark:text-gray-400">Based on completed units</div>
@@ -260,7 +347,7 @@ export default function StudentDetailView({ student, onBack }) {
                                                     <span className={`font-semibold text-sm text-left ${selectedUnit === unit.unit_id ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-300'}`}>{unit.unit_name}</span>
                                                 </div>
                                                 <div className="flex items-center gap-3">
-                                                    <CircularProgress percentage={unit.analytics?.completion_rate || 0} size={32} strokeWidth={3} />
+                                                    <CircularProgress percentage={unitCompletions[unit.unit_id] || 0} size={32} strokeWidth={3} />
                                                     {selectedUnit === unit.unit_id ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
                                                 </div>
                                             </button>
@@ -386,6 +473,14 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
     }, [subUnit.subUnitId, subUnit.unitId]);
 
     const handleAttemptClick = async (attempt) => {
+        // OPTIMIZATION: If we already have the full details (which we do for the default attempt 1 fetch), use it!
+        if (attempt.overview && attempt.submissions) {
+            console.log("Using cached attempt details", attempt);
+            setAttemptDetails(attempt);
+            setViewMode('detail');
+            return;
+        }
+
         setSelectedAttempt(attempt);
         setViewMode('detail');
         setLoadingDetails(true);
@@ -397,8 +492,10 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                 unit_id: subUnit.unitId,
                 sub_unit_id: subUnit.subUnitId,
                 result_type: resultType,
-                attempt: attempt.attempt || attempt.attempt_count // Ensure attempt number is passed
+                attempt: attempt.attempt || attempt.attempt_count
             };
+
+            // ... (rest of fetch logic remains for non-cached attempts) ...
 
             console.log("Fetching Attempt Details Payload:", payload);
             // UPDATE: Use Admin Endpoint for consistency as it supports proper student lookup
@@ -428,15 +525,94 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
         }
     };
 
+    const handleExportAttempt = async () => {
+        if (!attemptDetails) return;
+        try {
+            const XLSX = await import('xlsx');
+
+            // Sheet 1: Overview
+            const overviewData = [
+                { Metric: 'Student Name', Value: student.name || student.student_name },
+                { Metric: 'Reg ID', Value: student.uni_reg_id || student.reg_id },
+                { Metric: 'Sub Unit', Value: subUnit.name || subUnit.title },
+                { Metric: '', Value: '' },
+                { Metric: 'Attempt Number', Value: attemptDetails.overview.attempt_number },
+                { Metric: 'Score', Value: `${attemptDetails.overview.total_score} / ${attemptDetails.overview.max_score}` },
+                { Metric: 'Percentage', Value: `${attemptDetails.overview.percentage}%` },
+                { Metric: 'Status', Value: attemptDetails.overview.status },
+                { Metric: 'Result Type', Value: resultType },
+                { Metric: 'Start Time', Value: new Date(attemptDetails.overview.start_time).toLocaleString() },
+                { Metric: 'End Time', Value: new Date(attemptDetails.overview.end_time).toLocaleString() },
+            ];
+
+            if (attemptDetails.proctoring_metrics) {
+                overviewData.push({ Metric: '', Value: '' });
+                overviewData.push({ Metric: 'PROCTORING METRICS', Value: '' });
+                Object.entries(attemptDetails.proctoring_metrics).forEach(([k, v]) => {
+                    overviewData.push({ Metric: k, Value: v });
+                });
+            }
+
+            const wsOverview = XLSX.utils.json_to_sheet(overviewData);
+
+            // Sheet 2: Submissions
+            let submissionsData = [];
+            if (attemptDetails.submissions) {
+                submissionsData = attemptDetails.submissions.map((sub, i) => {
+                    const row = {
+                        'Q#': i + 1,
+                        'Title': sub.question_title || 'Question',
+                        'Description': sub.question_desc ? sub.question_desc.substring(0, 100) + '...' : '',
+                        'Score': sub.score_obtained,
+                        // 'Max Score': resultType === 'coding' ? ((sub.test_cases?.length || 0) * 10) : 1,
+                    };
+
+                    if (resultType === 'mcq') {
+                        row['Selected Index'] = sub.submitted_answer_index;
+                        row['Selected Text'] = sub.submitted_answer_text;
+                    } else {
+                        row['Language'] = sub.language;
+                        row['Code'] = sub.submitted_code || sub.submitted_answer;
+                    }
+                    return row;
+                });
+            }
+            const wsSubmissions = XLSX.utils.json_to_sheet(submissionsData);
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, wsOverview, "Overview");
+            XLSX.utils.book_append_sheet(wb, wsSubmissions, "Submissions");
+
+            const safeName = (student.name || 'Student').replace(/[^a-z0-9]/gi, '_');
+            const safeSubUnit = (subUnit.name || 'Unit').replace(/[^a-z0-9]/gi, '_');
+            const fileName = `${safeName}_${safeSubUnit}_Attempt_${attemptDetails.overview.attempt_number}.xlsx`;
+
+            XLSX.writeFile(wb, fileName);
+        } catch (e) {
+            console.error("Export Error", e);
+            alert("Failed to export attempt details.");
+        }
+    };
+
     if (viewMode === 'detail') {
         return (
             <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                <button
-                    onClick={() => setViewMode('history')}
-                    className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4"
-                >
-                    <ArrowLeft className="w-4 h-4" /> Back to History
-                </button>
+                <div className="flex justify-between items-center mb-4">
+                    <button
+                        onClick={() => setViewMode('history')}
+                        className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4" /> Back to History
+                    </button>
+                    {!loadingDetails && attemptDetails && (
+                        <button
+                            onClick={handleExportAttempt}
+                            className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                        >
+                            <TrendingUp className="w-4 h-4" /> Export Details
+                        </button>
+                    )}
+                </div>
 
                 {loadingDetails ? (
                     <div className="space-y-6">
@@ -446,11 +622,23 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                 ) : attemptDetails ? (
                     <>
                         {/* 1. Overview Card */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Attempt</div>
+                                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    #{attemptDetails.overview.attempt_number || '-'}
+                                </div>
+                            </div>
                             <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
                                 <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Score</div>
-                                <div className="text-3xl font-bold text-emerald-500 dark:text-emerald-400">
-                                    {attemptDetails.overview.total_score} <span className="text-lg text-gray-400 dark:text-gray-500 font-normal">/ {attemptDetails.overview.max_score}</span>
+                                <div className="text-2xl font-bold text-emerald-500 dark:text-emerald-400">
+                                    {attemptDetails.overview.total_score} <span className="text-sm text-gray-400 dark:text-gray-500 font-normal">/ {attemptDetails.overview.max_score}</span>
+                                </div>
+                            </div>
+                            <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Percentage</div>
+                                <div className="text-2xl font-bold text-blue-500 dark:text-blue-400">
+                                    {attemptDetails.overview.percentage}%
                                 </div>
                             </div>
                             <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
@@ -460,14 +648,40 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                 </div>
                             </div>
                             <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
-                                <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Duration</div>
-                                <div className="text-xl font-bold text-gray-900 dark:text-white">{attemptDetails.overview.duration_formatted}</div>
-                            </div>
-                            <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
                                 <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Result Type</div>
                                 <div className="text-xl font-bold text-cyan-600 dark:text-cyan-400 capitalize">{resultType}</div>
                             </div>
                         </div>
+
+                        {/* 1.5 Completion Stats */}
+                        {attemptDetails.completion_stats && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/10">
+                                    <div className="text-xs text-purple-500 font-bold uppercase">Total Questions</div>
+                                    <div className="text-xl font-bold text-purple-600 dark:text-purple-400">
+                                        {attemptDetails.completion_stats.total_coding || attemptDetails.completion_stats.total_mcq || 0}
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                                    <div className="text-xs text-blue-500 font-bold uppercase">Showing</div>
+                                    <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                                        {attemptDetails.completion_stats.total_coding_show || attemptDetails.completion_stats.total_mcq_show || 0}
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                                    <div className="text-xs text-emerald-500 font-bold uppercase">Submitted</div>
+                                    <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                                        {attemptDetails.completion_stats.user_submitted_count || 0}
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-xl bg-cyan-500/5 border border-cyan-500/10">
+                                    <div className="text-xs text-cyan-500 font-bold uppercase">Completion</div>
+                                    <div className="text-xl font-bold text-cyan-600 dark:text-cyan-400">
+                                        {attemptDetails.completion_stats.question_completion_percentage}%
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* 2. Proctoring Metrics */}
                         {attemptDetails.proctoring_metrics && (
@@ -503,28 +717,63 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                             </div>
                         )}
 
-                        {/* 3. System & Network Logs */}
+                        {/* 3. System & Network Logs (Highlighted) */}
                         {attemptDetails.debug_configs && (
-                            <div className="p-6 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
-                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                                    <Globe className="w-5 h-5 text-cyan-600 dark:text-cyan-400" /> System & Network Logs
+                            <div className="relative p-6 rounded-2xl bg-gradient-to-br from-gray-900 to-black border border-cyan-500/30 shadow-[0_0_30px_rgba(6,182,212,0.15)] overflow-hidden">
+                                {/* Decorative Glow */}
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 blur-[80px] rounded-full pointer-events-none" />
+
+                                <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2 relative z-10">
+                                    <Globe className="w-5 h-5 text-cyan-400" /> System & Network Logs
+                                    <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded border border-cyan-500/30 ml-2">Debug Info</span>
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm relative z-10">
                                     {/* Start Config */}
-                                    <div className="space-y-2">
-                                        <div className="text-xs text-cyan-400 font-bold uppercase">Session Start</div>
-                                        <div className="p-3 rounded-xl bg-black/20 space-y-1 font-mono text-xs text-gray-400">
-                                            <div><span className="text-gray-500">IP:</span> {attemptDetails.debug_configs.start_config?.network?.interfaces?.[0]?.ip || 'Unknown'}</div>
-                                            <div><span className="text-gray-500">MAC:</span> {attemptDetails.debug_configs.start_config?.network?.interfaces?.[0]?.mac || 'Unknown'}</div>
-                                            <div><span className="text-gray-500">OS:</span> {attemptDetails.debug_configs.start_config?.os?.platform} {attemptDetails.debug_configs.start_config?.os?.release}</div>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                            <div className="text-xs text-emerald-400 font-bold uppercase tracking-wider">Session Start</div>
+                                        </div>
+                                        <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2 font-mono text-xs text-gray-300">
+                                            <div className="flex justify-between border-b border-white/5 pb-2 mb-2">
+                                                <span className="text-gray-500">Timestamp</span>
+                                                <span className="text-white">{new Date(attemptDetails.debug_configs.start_config?.timestamp || Date.now()).toLocaleString()}</span>
+                                            </div>
+                                            <div className="grid grid-cols-[60px_1fr] gap-2">
+                                                <span className="text-gray-500">IP:</span>
+                                                <span className="truncate" title={attemptDetails.debug_configs.start_config?.network?.interfaces?.[0]?.ip}>{attemptDetails.debug_configs.start_config?.network?.interfaces?.[0]?.ip || 'Unknown'}</span>
+
+                                                <span className="text-gray-500">MAC:</span>
+                                                <span className="truncate" title={attemptDetails.debug_configs.start_config?.network?.interfaces?.[0]?.mac}>{attemptDetails.debug_configs.start_config?.network?.interfaces?.[0]?.mac || 'Unknown'}</span>
+
+                                                <span className="text-gray-500">OS:</span>
+                                                <span className="truncate">{attemptDetails.debug_configs.start_config?.os?.platform} {attemptDetails.debug_configs.start_config?.os?.release}</span>
+                                            </div>
                                         </div>
                                     </div>
+
                                     {/* End Config */}
-                                    <div className="space-y-2">
-                                        <div className="text-xs text-purple-400 font-bold uppercase">Session End</div>
-                                        <div className="p-3 rounded-xl bg-black/20 space-y-1 font-mono text-xs text-gray-400">
-                                            <div><span className="text-gray-500">IP:</span> {attemptDetails.debug_configs.end_config?.network?.interfaces?.[0]?.ip || 'Max'}</div>
-                                            <div><span className="text-gray-500">Captured:</span> {new Date(attemptDetails.debug_configs.end_config?.timestamp).toLocaleTimeString()}</div>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-purple-400" />
+                                            <div className="text-xs text-purple-400 font-bold uppercase tracking-wider">Session End</div>
+                                        </div>
+                                        <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2 font-mono text-xs text-gray-300">
+                                            <div className="flex justify-between border-b border-white/5 pb-2 mb-2">
+                                                <span className="text-gray-500">Captured</span>
+                                                <span className="text-white">{new Date(attemptDetails.debug_configs.end_config?.capturedAt || attemptDetails.debug_configs.end_config?.timestamp || Date.now()).toLocaleString()}</span>
+                                            </div>
+                                            <div className="grid grid-cols-[60px_1fr] gap-2">
+                                                <span className="text-gray-500">IP:</span>
+                                                <span className="truncate" title={attemptDetails.debug_configs.end_config?.network?.interfaces?.[0]?.ip}>{attemptDetails.debug_configs.end_config?.network?.interfaces?.[0]?.ip || 'Unknown'}</span>
+
+                                                <span className="text-gray-500">MAC:</span>
+                                                <span className="truncate" title={attemptDetails.debug_configs.end_config?.network?.interfaces?.[0]?.mac}>{attemptDetails.debug_configs.end_config?.network?.interfaces?.[0]?.mac || 'Unknown'}</span>
+
+                                                <span className="text-gray-500">Hostname:</span>
+                                                <span className="truncate">{attemptDetails.debug_configs.end_config?.os?.hostname || 'N/A'}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -575,7 +824,12 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                                 {resultType === 'coding' ? 'Coding Score' : 'MCQ Score'}
                                             </div>
                                             <div className={`text-2xl font-bold ${sub.score_obtained > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                {sub.score_obtained} <span className="text-sm font-normal text-gray-500">/ {sub.max_score || '?'}</span>
+                                                {sub.score_obtained}
+                                                <span className="text-sm font-normal text-gray-500">
+                                                    / {resultType === 'coding'
+                                                        ? (sub.test_cases?.filter(tc => tc.name?.toLowerCase().includes('hidden')).length || 0) * 10
+                                                        : 1}
+                                                </span>
                                             </div>
                                             <div className="px-2 py-0.5 rounded text-[10px] bg-white/10 text-gray-300 font-mono">
                                                 {sub.language || 'N/A'}
@@ -583,19 +837,51 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                         </div>
                                     </div>
 
+                                    {/* MCQ Options */}
+                                    {sub.options && (
+                                        <div className="p-4 bg-white/5 space-y-2">
+                                            {sub.options.map((opt, i) => {
+                                                // ROBUST CHECK: Match by Index OR Text (in case index is missing/wrong)
+                                                const isSelected = i === sub.submitted_answer_index ||
+                                                    (sub.submitted_answer_text && opt.option === sub.submitted_answer_text);
+                                                const isCorrect = opt.isAnswer;
+
+                                                let styleClass = 'bg-white/5 border-white/5 text-gray-400'; // Default
+                                                if (isCorrect) styleClass = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+                                                else if (isSelected) styleClass = 'bg-red-500/10 border-red-500/30 text-red-400';
+
+                                                return (
+                                                    <div key={i} className={`p-3 rounded-lg border text-sm flex justify-between items-center ${styleClass}`}>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-4 h-4 rounded-full border flex items-center justify-center
+                                                                ${isSelected || isCorrect ? 'border-current' : 'border-gray-500'}`}>
+                                                                {isSelected && <div className="w-2 h-2 rounded-full bg-current" />}
+                                                            </div>
+                                                            <span>{opt.option}</span>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            {isSelected && <span className="text-[10px] font-bold uppercase tracking-wider border border-current px-1.5 py-0.5 rounded">Your Answer</span>}
+                                                            {isCorrect && <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 px-1.5 py-0.5 rounded">Correct</span>}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
                                     {/* Code Snippet */}
-                                    {sub.submitted_code && (
+                                    {(sub.submitted_code || sub.submitted_answer) && resultType === 'coding' && (
                                         <div className="bg-[#0d1117] p-4 text-xs font-mono overflow-x-auto text-gray-300 border-t border-white/5 relative">
                                             <div className="absolute top-2 right-2 text-[10px] text-gray-500 uppercase flex items-center gap-2">
                                                 <div className={`w-2 h-2 rounded-full ${sub.score_obtained > 0 ? 'bg-emerald-500' : 'bg-red-500'}`} />
                                                 Submitted Code
                                             </div>
-                                            <pre>{sub.submitted_code}</pre>
+                                            <pre>{sub.submitted_code || sub.submitted_answer}</pre>
                                         </div>
                                     )}
 
-                                    {/* Test Cases */}
-                                    {sub.test_cases && sub.test_cases.length > 0 && sub.test_cases[0].status !== 'N/A' && (
+                                    {/* Test Cases (Coding) - HIDDEN as per user request */}
+                                    {/* {sub.test_cases && sub.test_cases.length > 0 && sub.test_cases[0].status !== 'N/A' && (
                                         <div className="p-4 bg-gray-50 dark:bg-black/10 border-t border-gray-200 dark:border-white/5">
                                             <div className="text-[10px] font-bold text-gray-500 uppercase mb-2">Test Cases</div>
                                             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
@@ -605,12 +891,12 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                                         : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
                                                         }`}>
                                                         <span className="font-semibold mb-0.5">{tc.name}</span>
-                                                        <span className="opacity-70">{tc.time}</span>
+                                                        <span className="opacity-70">{tc.time || '0ms'}</span>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
-                                    )}
+                                    )} */}
                                 </div>
                             ))}
                         </div>

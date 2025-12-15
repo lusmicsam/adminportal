@@ -14,29 +14,52 @@ export default function BatchDetailView({ batch, onBack, onSectionSelect }) {
         const fetchBatchData = async () => {
             setLoading(true);
             try {
-                // 1. Fetch Sections
-                const secRes = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.masters.sections}`, {
+                // 1. Fetch Sections using New API
+                const secRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.getSectionsByBatch}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ batch_id: batch.batch_id }),
                     credentials: 'include'
                 });
                 const secData = await secRes.json();
-                const allSections = Array.isArray(secData.data) ? secData.data : (Array.isArray(secData) ? secData : []);
 
-                const batchSections = allSections.filter(sec =>
-                    sec.batch_id === batch.batch_id ||
-                    sec.batch === batch.batch_name ||
-                    (sec.tags && sec.tags.includes(batch.batch_name))
-                );
+                let batchSections = [];
+
+                if (secData.success && secData.data) {
+                    // secData.data.sections is array of strings: ["K24AD", "K23TU"]
+                    // We need to map them to objects for the UI
+                    const sectionNames = secData.data.sections || [];
+                    batchSections = sectionNames.map(name => ({
+                        section_name: name,
+                        batch_id: batch.batch_id,
+                        // Placeholders as new API doesn't provide these yet
+                        student_count: 0,
+                        progress: 0
+                    }));
+                }
 
                 setSections(batchSections);
 
-                // 2. Fetch Courses
-                // Endpoint: /api/courses/:batchId (Proxied via Student -> ap-q3q62i6z7...)
-                const courseRes = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.courses(batch.batch_id)}`, {
+                // 2. Fetch Courses using New API
+                const courseRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.getPracticeCoursesByBatch}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ batch_id: batch.batch_id }),
                     credentials: 'include'
                 });
                 const courseData = await courseRes.json();
-                // Handle response format variations
-                const courseList = courseData.success ? (courseData.data || []) : (Array.isArray(courseData) ? courseData : []);
+
+                // New API Response Structure: { success: true, data: { courses: [...] } } or similar
+                // Based on get-sections pattern, likely data.courses or just data array
+                let courseList = [];
+                if (courseData.success && courseData.data) {
+                    if (Array.isArray(courseData.data)) {
+                        courseList = courseData.data;
+                    } else if (courseData.data.courses) {
+                        courseList = courseData.data.courses;
+                    }
+                }
+
                 setCourses(courseList);
 
             } catch (error) {

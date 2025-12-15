@@ -16,6 +16,10 @@ export const API_CONFIG = {
         courseStructure: (courseId) => `/api/university/admin/course-structure/${courseId}`,
         sectionAnalytics: (sectionName) => `/api/university/admin/section-analytics/${sectionName}`,
         subUnitDetails: '/api/university/admin/analytics/sub-unit-details',
+        unitCompletion: '/api/auth/teacher/teacher/analytics/unit-completion',
+        sectionCompletion: '/api/auth/teacher/teacher/analytics/section-completion',
+        getSectionsByBatch: '/api/university/admin/get-sections-by-batch',
+        getPracticeCoursesByBatch: '/api/university/admin/get-practice-courses-by-batch',
     },
 
     // Master Data
