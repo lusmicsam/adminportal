@@ -660,11 +660,11 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                 <>
                     {/* Summary Stats */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-emerald-500/10 dark:to-green-500/5 border border-gray-200 dark:border-emerald-500/20 backdrop-blur-sm shadow-sm dark:shadow-none">
+                        <div className="p-5 rounded-2xl bg-white dark:bg-white/5 dark:bg-gradient-to-br dark:from-emerald-500/10 dark:to-green-500/5 border border-gray-200 dark:border-emerald-500/20 backdrop-blur-sm shadow-sm dark:shadow-none">
                             <div className="text-gray-500 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">Total Attempts</div>
                             <div className="text-3xl font-bold text-gray-900 dark:text-white">{history?.length || 0}</div>
                         </div>
-                        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-blue-500/10 dark:to-indigo-500/5 border border-gray-200 dark:border-blue-500/20 backdrop-blur-sm shadow-sm dark:shadow-none">
+                        <div className="p-5 rounded-2xl bg-white dark:bg-white/5 dark:bg-gradient-to-br dark:from-blue-500/10 dark:to-indigo-500/5 border border-gray-200 dark:border-blue-500/20 backdrop-blur-sm shadow-sm dark:shadow-none">
                             <div className="text-gray-500 dark:text-blue-400 text-xs font-bold uppercase tracking-wider mb-2">Best Score</div>
                             <div className="text-3xl font-bold text-gray-900 dark:text-white">
                                 {history?.length > 0
@@ -672,7 +672,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                     : '-'}
                             </div>
                         </div>
-                        <div className="p-5 rounded-2xl bg-white dark:bg-gradient-to-br dark:from-purple-500/10 dark:to-pink-500/5 border border-gray-200 dark:border-purple-500/20 backdrop-blur-sm shadow-sm dark:shadow-none">
+                        <div className="p-5 rounded-2xl bg-white dark:bg-white/5 dark:bg-gradient-to-br dark:from-purple-500/10 dark:to-pink-500/5 border border-gray-200 dark:border-purple-500/20 backdrop-blur-sm shadow-sm dark:shadow-none">
                             <div className="text-gray-500 dark:text-purple-400 text-xs font-bold uppercase tracking-wider mb-2">Avg. Time</div>
                             <div className="text-3xl font-bold text-gray-900 dark:text-white">
                                 {history?.length > 0 ? '4m 32s' : '-'}
