@@ -27,6 +27,10 @@ const nextConfig = {
         destination: 'https://ap-is-seven.vercel.app/api/auth/teacher/teacher/analytics/section-completion',
       },
       {
+        source: '/api/proxy/admin/api/auth/teacher/teacher/analytics/section-exam-progress',
+        destination: 'https://ap-is-seven.vercel.app/api/auth/teacher/teacher/analytics/section-exam-progress',
+      },
+      {
         source: '/api/proxy/admin/api/university/admin/get-sections-by-batch',
         destination: 'https://ap-is-seven.vercel.app/api/university/admin/get-sections-by-batch',
       },

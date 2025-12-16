@@ -19,7 +19,9 @@ export const API_CONFIG = {
         unitCompletion: '/api/auth/teacher/teacher/analytics/unit-completion',
         sectionCompletion: '/api/auth/teacher/teacher/analytics/section-completion',
         getSectionsByBatch: '/api/university/admin/get-sections-by-batch',
+
         getPracticeCoursesByBatch: '/api/university/admin/get-practice-courses-by-batch',
+        examDetails: '/api/auth/teacher/teacher/analytics/section-exam-progress',
     },
 
     // Master Data

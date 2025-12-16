@@ -16,12 +16,18 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
     };
 
     const [courseCompletions, setCourseCompletions] = useState(getInitialCompletions());
+    const [examDataMap, setExamDataMap] = useState({});
+
+    const sectionName = typeof section === 'string' ? section : section?.section_name || '';
+    const userId = user?.university_id || user?.universityId || user?.id;
 
     useEffect(() => {
         const fetchAnalytics = async () => {
+            if (!sectionName) return;
+
             setLoading(true);
             try {
-                const sectionName = typeof section === 'string' ? section : section.section_name || section;
+                // 1. Fetch Basic Analytics (Students & Courses List)
                 const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionAnalytics(encodeURIComponent(sectionName))}`;
                 const res = await fetch(url, { credentials: 'include' });
                 const json = await res.json();
@@ -29,47 +35,69 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                 if (json.success) {
                     setData(json.data);
 
-                    if (json.data.course_performance && user) {
-                        const newCompletions = { ...courseCompletions }; // Start with existing
-                        let hasUpdates = false;
+                    if (json.data.course_performance && userId) {
+                        const newCompletions = { ...courseCompletions };
+                        const newExamMap = { ...examDataMap };
+                        let hasCompUpdates = false;
+                        let hasExamUpdates = false;
 
                         await Promise.all(json.data.course_performance.map(async (course) => {
-                            // Check Cache First
-                            if (courseCompletions[course.course_id] !== undefined) {
-                                return; // Already have data
-                            }
-
+                            // Parallel Fetch: Check Exam Status & Fetch Completion
                             try {
-                                const payload = {
-                                    section_name: sectionName,
-                                    course_id: course.course_id,
-                                    university_id: user.university_id || user.universityId || user.id || user.uni_id
-                                };
-                                const compRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionCompletion}`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify(payload),
-                                    credentials: 'include'
-                                });
-                                const compData = await compRes.json();
-                                if (compData.success && compData.data) {
-                                    const val = compData.data.overall_section_completion || compData.data.completion || 0;
-                                    newCompletions[course.course_id] = val;
+                                // A. Check Exam Status
+                                if (newExamMap[course.course_id] === undefined) {
+                                    const examRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.examDetails}`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            section_name: sectionName,
+                                            course_id: course.course_id
+                                        }),
+                                        credentials: 'include'
+                                    });
+                                    const examJson = await examRes.json();
+                                    console.log("Exam API Response:", course.course_name, examJson);
 
-                                    // Update Global Cache
-                                    if (onUpdateCache) {
-                                        onUpdateCache(sectionName, course.course_id, val);
+                                    // It is an exam ONLY if students array exists and has data.
+                                    if (examJson.success && examJson.data && Array.isArray(examJson.data.students) && examJson.data.students.length > 0) {
+                                        newExamMap[course.course_id] = examJson.data;
+                                        hasExamUpdates = true;
+                                        return; // It's an exam, skip completion fetch
+                                    } else {
+                                        newExamMap[course.course_id] = null; // Not an exam
+                                        hasExamUpdates = true;
+                                        // Continue to Block B to fetch completion
                                     }
-                                    hasUpdates = true;
+                                }
+
+                                // B. If NOT an exam, fetch Completion (if missing)
+                                if (!newExamMap[course.course_id] && newCompletions[course.course_id] === undefined) {
+                                    const payload = {
+                                        section_name: sectionName,
+                                        course_id: course.course_id,
+                                        university_id: userId
+                                    };
+                                    const compRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionCompletion}`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(payload),
+                                        credentials: 'include'
+                                    });
+                                    const compData = await compRes.json();
+                                    if (compData.success && compData.data) {
+                                        const val = compData.data.overall_section_completion || compData.data.completion || 0;
+                                        newCompletions[course.course_id] = val;
+                                        if (onUpdateCache) onUpdateCache(sectionName, course.course_id, val);
+                                        hasCompUpdates = true;
+                                    }
                                 }
                             } catch (e) {
-                                console.error("Failed section completion fetch", e);
+                                console.error("Failed analytics fetch item", e);
                             }
                         }));
 
-                        if (hasUpdates) {
-                            setCourseCompletions(newCompletions);
-                        }
+                        if (hasCompUpdates) setCourseCompletions(newCompletions);
+                        if (hasExamUpdates) setExamDataMap(newExamMap);
                     }
                 }
             } catch (error) {
@@ -79,19 +107,8 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
             }
         };
 
-        if (section) {
-            fetchAnalytics();
-        }
-    }, [section, user]);
-
-    // ... (rest of sorting logic) ...
-    // Note: I will copy the rest of logic to ensure the file is valid, utilizing the partial replace.
-    // Actually, I can just replace the top part and then target the rendering part separately or use multi-replace.
-    // I will use multi-replace to target both areas in one go.
-
-    // WAIT, I should use MULTI_REPLACE or just re-write the component parts.
-    // The instructions say "to edit multiple, non-adjacent lines... make a single call to multi_replace...".
-    // I will do that.
+        fetchAnalytics();
+    }, [sectionName, userId]);
 
     // Derived Analytics from Sections
     const sortedStudents = React.useMemo(() => {
@@ -115,6 +132,8 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
         setSortConfig({ key, direction });
     };
 
+    const [inspectingTest, setInspectingTest] = useState(null);
+
     // --- EXPORT LOGIC ---
     const [isExporting, setIsExporting] = useState(false);
     const [exportProgress, setExportProgress] = useState(0);
@@ -126,20 +145,6 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
 
         try {
             const XLSX = await import('xlsx');
-
-            // We need to flatten the data.
-            // Row per Student? Or Row per Student-Course?
-            // Usually Row per Student is best for Summary.
-
-            // However, user asked for "MCQ and Coding details". 
-            // The Section Analytics API gives us `student_performance` which has `courses` array.
-            // Let's check what's inside a course object in `student_performance`:
-            // { course_id, course_name, score, status, ... }
-            // It might NOT have MCQ/Coding split. 
-            // BUT user said: "use it to get each attempt detail".
-            // This suggests fetching `subUnitDetails` using the student data.
-            // Fetching details for ALL students * ALL courses is extremely heavy.
-            // Strategy: We will export the available aggregated data which is "Student - Course - Score - Status".
 
             const exportData = sortedStudents.map(s => {
                 const row = {
@@ -155,7 +160,6 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         const sCourse = s.courses.find(sc => sc.course_id === c.course_id);
                         row[`${c.course_name} - Score`] = sCourse ? sCourse.score : '-';
                         row[`${c.course_name} - Status`] = sCourse ? sCourse.status : '-';
-                        // row[`${c.course_name} - Completion`] = sCourse ? sCourse.completion : '-'; // If available
                     });
                 }
                 return row;
@@ -192,6 +196,10 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
     if (!data) return null;
 
     const { section_metadata, course_performance, student_performance } = data;
+
+    // Separate Courses and Exams based on API response
+    const regularCourses = course_performance?.filter(c => !examDataMap[c.course_id]) || [];
+    const examCourses = course_performance?.filter(c => examDataMap[c.course_id]) || [];
 
     return (
         <div className="fixed inset-0 z-[60] flex flex-col bg-gray-50 dark:bg-[#0B0F19] animate-in fade-in slide-in-from-right duration-300 overflow-hidden">
@@ -231,7 +239,7 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         <TrendingUp className="w-5 h-5 text-cyan-600 dark:text-cyan-400" /> Course Performance
                     </h3>
                     <div className="space-y-4">
-                        {course_performance?.map(course => (
+                        {regularCourses.map(course => (
                             <div key={course.course_id} className="p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none relative overflow-hidden">
                                 <div className="relative z-10">
                                     <div className="flex justify-between items-start mb-2">
@@ -261,6 +269,21 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                                 </div>
                             </div>
                         ))}
+
+                        {/* EXAM COURSES (No Progress, Just Action) */}
+                        {examCourses.map(course => (
+                            <div key={course.course_id} className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 shadow-sm relative overflow-hidden group">
+                                <div className="flex justify-between items-start mb-4">
+                                    <h4 className="font-bold text-purple-700 dark:text-purple-300 text-sm">{course.course_name}</h4>
+                                </div>
+                                <button
+                                    onClick={() => setInspectingTest(examDataMap[course.course_id])}
+                                    className="w-full py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-purple-500/20"
+                                >
+                                    View Detailed Result
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
@@ -281,8 +304,8 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                                     <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5" onClick={() => requestSort('overall_progress')}>
                                         Progress <ArrowUpDown className="w-3 h-3 inline ml-1 opacity-50" />
                                     </th>
-                                    {/* Dynamic Course Headers */}
-                                    {course_performance?.map(c => (
+                                    {/* Dynamic Course Headers (Exclude Exams) */}
+                                    {regularCourses.map(c => (
                                         <th key={c.course_id} className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300 text-center border-l border-gray-200 dark:border-white/5">
                                             {c.course_name}
                                         </th>
@@ -304,8 +327,8 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                                                 <span className="text-sm font-bold text-gray-900 dark:text-white">{student.overall_progress}%</span>
                                             </div>
                                         </td>
-                                        {/* Dynamic Course Cells */}
-                                        {course_performance?.map(c => {
+                                        {/* Dynamic Course Cells (Exclude Exams) */}
+                                        {regularCourses.map(c => {
                                             const courseData = student.courses.find(sc => sc.course_id === c.course_id);
                                             return (
                                                 <td key={c.course_id} className="p-4 text-center border-l border-gray-200 dark:border-white/5">
@@ -323,6 +346,126 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                                                 </td>
                                             );
                                         })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {/* Test Detail Overlay */}
+            {inspectingTest && (
+                <TestDetailOverlay
+                    test={inspectingTest}
+                    students={student_performance}
+                    sectionMetadata={section_metadata}
+                    onClose={() => setInspectingTest(null)}
+                />
+            )}
+        </div>
+    );
+}
+
+function TestDetailOverlay({ test, students, sectionMetadata, onClose }) {
+    // Note: 'test' here corresponds to the examDataMap entry which mimics the structure provided by user:
+    // { section_name, students: [{ student_name, uni_reg_id, exam_completion_percentage, total_marks, marks_breakdown, ... }] }
+
+    // We default to passed 'test' prop which is the real exam data object now.
+    const examStudents = test?.students || [];
+
+    const handleExport = async () => {
+        try {
+            const XLSX = await import('xlsx');
+            const exportData = examStudents.map(s => ({
+                'Student Name': s.student_name,
+                'Reg ID': s.uni_reg_id,
+                'Completion (%)': s.exam_completion_percentage,
+                'Total Marks': s.total_marks,
+                'Coding Marks': s.marks_breakdown?.coding_marks || 0,
+                'MCQ Marks': s.marks_breakdown?.mcq_marks || 0,
+                'OS': s.debug_configs?.start_config?.os?.platform || '-',
+                'Hostname': s.debug_configs?.start_config?.os?.hostname || '-'
+            }));
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const colWidths = Object.keys(exportData[0] || {}).map(key => ({ wch: key.length + 5 }));
+            ws['!cols'] = colWidths;
+            XLSX.utils.book_append_sheet(wb, ws, "Exam Results");
+            XLSX.writeFile(wb, `${test?.section_name || 'Exam'}_Results.xlsx`);
+        } catch (e) {
+            console.error("Export failed", e);
+            alert("Failed to export exam results");
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[70] flex flex-col bg-gray-50 dark:bg-[#0B0F19] animate-in slide-in-from-right duration-300">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-white/5 bg-white/70 dark:bg-white/5 backdrop-blur-xl shrink-0">
+                <div className="flex items-center gap-6">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
+                    <div>
+                        <div className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider font-semibold mb-1">Test Results</div>
+                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{test?.section_name || 'Exam Details'}</h2>
+                        <div className="text-sm text-gray-500">{sectionMetadata?.section_name}</div>
+                    </div>
+                </div>
+                <button
+                    onClick={handleExport}
+                    className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl transition-colors shadow-lg shadow-purple-500/20"
+                >
+                    <TrendingUp className="w-4 h-4" /> Export Results
+                </button>
+            </div>
+
+            <div className="flex-1 p-8 overflow-auto">
+                <div className="max-w-6xl mx-auto">
+                    <div className="bg-white dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/10 overflow-hidden shadow-sm">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/10">
+                                <tr>
+                                    <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300">Student Name</th>
+                                    <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300">Reg ID</th>
+                                    <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300 text-center">Completion</th>
+                                    <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300 text-center">Marks (Total)</th>
+                                    <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300 text-center">Breakdown</th>
+                                    <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300 text-center">System Info</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                                {examStudents.map((student, i) => (
+                                    <tr key={student.uni_reg_id || i} className="hover:bg-gray-50 dark:hover:bg-white/5">
+                                        <td className="p-4 font-medium text-gray-900 dark:text-white">{student.student_name}</td>
+                                        <td className="p-4 text-sm text-gray-500 font-mono">{student.uni_reg_id}</td>
+                                        <td className="p-4 text-center">
+                                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${student.exam_completion_percentage === 100 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-yellow-500/10 text-yellow-500'
+                                                }`}>
+                                                {student.exam_completion_percentage}%
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-center font-bold text-gray-900 dark:text-white">
+                                            {student.total_marks}
+                                        </td>
+                                        <td className="p-4 text-center text-xs text-gray-500">
+                                            <div className="flex flex-col gap-1 items-center">
+                                                <span className="text-cyan-600 dark:text-cyan-400">Coding: {student.marks_breakdown?.coding_marks || 0}</span>
+                                                <span className="text-purple-600 dark:text-purple-400">MCQ: {student.marks_breakdown?.mcq_marks || 0}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4 text-center text-xs text-gray-400">
+                                            {student.debug_configs?.start_config?.os ? (
+                                                <div className="flex flex-col gap-1">
+                                                    <span>{student.debug_configs.start_config.os.platform} / {student.debug_configs.start_config.os.arch}</span>
+                                                    <span>{student.debug_configs.start_config.os.hostname}</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-gray-300 dark:text-gray-600">-</span>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
