@@ -3,6 +3,7 @@
 import { createContext, useState, useEffect, useContext } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { API_CONFIG } from "../utils/api";
+import { setAdminToken, clearAdminToken } from "../utils/cookies";
 
 const AuthContext = createContext();
 
@@ -76,10 +77,10 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         checkSession();
 
-        // Background Session Check (every 60 seconds)
+        // Background Session Check (every 10 minutes)
         const intervalId = setInterval(() => {
             checkSession(true);
-        }, 60000);
+        }, 600000); // 10 minutes = 600000ms
 
         return () => clearInterval(intervalId);
     }, []); // Run once on mount
@@ -97,10 +98,16 @@ export const AuthProvider = ({ children }) => {
             const data = await res.json();
 
             // Check if login was actually successful based on API response
-            // Assuming simplified response as per user request or standard JWT set-cookie flow
-            if (res.ok) {
-                // Successful login
-                await checkSession(); // Refresh user state immediately
+            if (res.ok && data.success) {
+                // Backend now returns token in response body
+                if (data.token) {
+                    setAdminToken(data.token);
+                } else {
+                    console.error('No token found in login response!');
+                }
+
+                // Refresh user state immediately
+                await checkSession();
                 return { success: true };
             } else {
                 return { success: false, error: data.message || "Invalid Credentials" };
@@ -118,10 +125,14 @@ export const AuthProvider = ({ children }) => {
             setLoading(true);
             const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.logout}`;
             await apiCall(url, { method: "POST" }); // Assuming this clears the cookie
+            clearAdminToken(); // Clear token from localStorage
             handleLogout();
             router.push("/admin/login");
         } catch (error) {
             console.error("Logout failed:", error);
+            // Even if API call fails, clear local token
+            clearAdminToken();
+            handleLogout();
         } finally {
             setLoading(false);
         }

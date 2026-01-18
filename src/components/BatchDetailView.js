@@ -126,25 +126,9 @@ export default function BatchDetailView({ batch, onBack, onSectionSelect }) {
                             Performance Overview
                         </h3>
 
-                        <div className="p-6 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 relative overflow-hidden group shadow-sm dark:shadow-none">
-                            <div className="relative z-10 flex items-center justify-between">
-                                <div>
-                                    <div className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Batch Progress</div>
-                                    <div className="text-4xl font-bold text-gray-900 dark:text-white">{analytics?.avgProgress || 0}%</div>
-                                </div>
-                                <CircularProgress percentage={analytics?.avgProgress || 0} size={64} strokeWidth={6} color="purple" />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
-                                <div className="text-gray-500 dark:text-gray-400 text-xs uppercase mb-2">Total Sections</div>
-                                <div className="text-2xl font-bold text-gray-900 dark:text-white">{analytics?.totalSections || 0}</div>
-                            </div>
-                            <div className="p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
-                                <div className="text-gray-500 dark:text-gray-400 text-xs uppercase mb-2">Total Students</div>
-                                <div className="text-2xl font-bold text-gray-900 dark:text-white">{analytics?.totalStudents || 0}</div>
-                            </div>
+                        <div className="p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                            <div className="text-gray-500 dark:text-gray-400 text-xs uppercase mb-2">Total Sections</div>
+                            <div className="text-2xl font-bold text-gray-900 dark:text-white">{analytics?.totalSections || 0}</div>
                         </div>
                     </div>
 

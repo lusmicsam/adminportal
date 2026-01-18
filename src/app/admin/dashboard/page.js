@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import { API_CONFIG } from '../../../utils/api';
+import { getAdminToken } from '../../../utils/cookies';
 import { BatchSkeleton, TeacherSkeleton, ListSkeleton, Skeleton, SectionSkeleton, DashboardSkeleton } from '../../../components/Skeletons';
 import StudentDetailView from '../../../components/StudentDetailView';
 import TeacherDetailView from '../../../components/TeacherDetailView'; // Added
@@ -73,7 +74,18 @@ export default function DeepDiveDashboard() {
     const fetchWithAuth = async (url, options = {}) => {
         setLoading(true);
         try {
-            const res = await fetch(url, { ...options, credentials: 'include' });
+            const token = getAdminToken();
+            const headers = {
+                ...(options.headers || {})
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            const res = await fetch(url, {
+                ...options,
+                credentials: 'include',
+                headers
+            });
             const data = await res.json();
             return data.data || data || [];
         } catch (e) {

@@ -40,7 +40,7 @@ const nextConfig = {
       },
       {
         source: '/api/proxy/admin/:path*',
-        destination: 'https://ap-3fqqyqoo8-ujjwal16895s-projects.vercel.app/:path*',
+        destination: 'https://ap-is-seven.vercel.app/:path*',
       },
       {
         source: '/api/proxy/student/:path*',

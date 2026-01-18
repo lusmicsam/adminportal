@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Mail, BookOpen, Layers, User, TrendingUp } from 'lucide-react';
 import { CircularProgress } from './CircularProgress';
 import { API_CONFIG } from '../utils/api';
+import { getAdminToken } from '../utils/cookies';
 
 export default function TeacherDetailView({ teacher, onBack, onSectionSelect, cache = {}, onUpdateCache, user }) {
     if (!teacher) return null;
@@ -28,7 +29,15 @@ export default function TeacherDetailView({ teacher, onBack, onSectionSelect, ca
                 try {
                     // 1. Fetch Section Analytics to get Course List
                     const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionAnalytics(encodeURIComponent(sectionName))}`;
-                    const res = await fetch(url, { credentials: 'include' });
+                    const token = getAdminToken();
+                    const headers = {};
+                    if (token) {
+                        headers['Authorization'] = `Bearer ${token}`;
+                    }
+                    const res = await fetch(url, {
+                        credentials: 'include',
+                        headers
+                    });
                     const json = await res.json();
 
                     if (json.success && json.data?.course_performance) {
@@ -40,9 +49,13 @@ export default function TeacherDetailView({ teacher, onBack, onSectionSelect, ca
                                     course_id: course.course_id,
                                     university_id: user.university_id || user.universityId || user.id || user.uni_id
                                 };
+                                const compHeaders = { 'Content-Type': 'application/json' };
+                                if (token) {
+                                    compHeaders['Authorization'] = `Bearer ${token}`;
+                                }
                                 const compRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionCompletion}`, {
                                     method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
+                                    headers: compHeaders,
                                     body: JSON.stringify(payload),
                                     credentials: 'include'
                                 });

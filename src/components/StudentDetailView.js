@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ChevronDown, ChevronRight, BookOpen, Clock, AlertCircle, Award, Activity, Globe, ArrowRight, TrendingUp } from 'lucide-react';
 import { CircularProgress } from './CircularProgress';
 import { API_CONFIG } from '../utils/api';
+import { getAdminToken } from '../utils/cookies';
 import { Skeleton } from './Skeletons';
 
 export default function StudentDetailView({ student, onBack }) {
@@ -101,10 +102,14 @@ export default function StudentDetailView({ student, onBack }) {
                     course_id: courseId,
                     unit_id: unit.unit_id
                 };
-
+                const token = getAdminToken();
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
                 const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.unitCompletion}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers,
                     body: JSON.stringify(payload),
                     credentials: 'include'
                 });
@@ -170,7 +175,15 @@ export default function StudentDetailView({ student, onBack }) {
         setOverallCourseProgress(0);
 
         try {
-            const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.courseStructure(course.course_id)}`, { credentials: 'include' });
+            const token = getAdminToken();
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.courseStructure(course.course_id)}`, {
+                credentials: 'include',
+                headers
+            });
             const data = await res.json();
             const structure = data.data || [];
             setCourseStructure(structure);
@@ -217,9 +230,14 @@ export default function StudentDetailView({ student, onBack }) {
             };
 
             console.log("Fetching History Payload:", payload);
+            const token = getAdminToken();
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
             const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.subUnitDetails}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(payload),
                 credentials: 'include'
             });
@@ -435,7 +453,6 @@ const CoursesGridView = ({ courses, loading, onSelect }) => {
                                     <BookOpen className="w-6 h-6" />
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
-                                    <CircularProgress percentage={course.completion_rate || 0} size={42} strokeWidth={4} color="blue" />
                                     <div className="bg-black/20 backdrop-blur-md px-2 py-0.5 rounded-md text-[10px] font-mono text-gray-500 border border-white/5">
                                         {course.course_code}
                                     </div>
@@ -499,9 +516,14 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
 
             console.log("Fetching Attempt Details Payload:", payload);
             // UPDATE: Use Admin Endpoint for consistency as it supports proper student lookup
+            const token = getAdminToken();
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
             const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.subUnitDetails}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify(payload),
                 credentials: 'include'
             });

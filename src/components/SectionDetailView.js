@@ -3,6 +3,7 @@ import { ArrowLeft, BookOpen, Users, TrendingUp, AlertCircle, Search, ArrowUpDow
 import { CircularProgress } from './CircularProgress';
 import { Skeleton, SectionDetailSkeleton } from './Skeletons';
 import { API_CONFIG } from '../utils/api';
+import { getAdminToken } from '../utils/cookies';
 
 export default function SectionDetailView({ section, teachers = [], onBack, onStudentSelect, user, cache = {}, onUpdateCache }) {
     const [data, setData] = useState(null);
@@ -29,7 +30,15 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
             try {
                 // 1. Fetch Basic Analytics (Students & Courses List)
                 const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionAnalytics(encodeURIComponent(sectionName))}`;
-                const res = await fetch(url, { credentials: 'include' });
+                const token = getAdminToken();
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+                const res = await fetch(url, {
+                    credentials: 'include',
+                    headers
+                });
                 const json = await res.json();
 
                 if (json.success) {
@@ -46,9 +55,13 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                             try {
                                 // A. Check Exam Status
                                 if (newExamMap[course.course_id] === undefined) {
+                                    const examHeaders = { 'Content-Type': 'application/json' };
+                                    if (token) {
+                                        examHeaders['Authorization'] = `Bearer ${token}`;
+                                    }
                                     const examRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.examDetails}`, {
                                         method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
+                                        headers: examHeaders,
                                         body: JSON.stringify({
                                             section_name: sectionName,
                                             course_id: course.course_id
@@ -77,9 +90,13 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                                         course_id: course.course_id,
                                         university_id: userId
                                     };
+                                    const compHeaders = { 'Content-Type': 'application/json' };
+                                    if (token) {
+                                        compHeaders['Authorization'] = `Bearer ${token}`;
+                                    }
                                     const compRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionCompletion}`, {
                                         method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
+                                        headers: compHeaders,
                                         body: JSON.stringify(payload),
                                         credentials: 'include'
                                     });
