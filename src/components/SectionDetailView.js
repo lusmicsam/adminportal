@@ -128,6 +128,18 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
     }, [sectionName, userId]);
 
     // Derived Analytics from Sections
+    const regularCourses = React.useMemo(() => {
+        if (!data?.course_performance) return [];
+        return data.course_performance.filter(c => !examDataMap[c.course_id]);
+    }, [data, examDataMap]);
+
+    const examCourses = React.useMemo(() => {
+        if (!data?.course_performance) return [];
+        return data.course_performance.filter(c => examDataMap[c.course_id]);
+    }, [data, examDataMap]);
+
+    const [inspectingTest, setInspectingTest] = useState(null);
+
     const sortedStudents = React.useMemo(() => {
         if (!data?.student_performance) return [];
         let sortable = [...data.student_performance];
@@ -149,8 +161,6 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
         setSortConfig({ key, direction });
     };
 
-    const [inspectingTest, setInspectingTest] = useState(null);
-
     // --- EXPORT LOGIC ---
     const [isExporting, setIsExporting] = useState(false);
     const [exportProgress, setExportProgress] = useState(0);
@@ -162,38 +172,140 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
 
         try {
             const XLSX = await import('xlsx');
+            const students = sortedStudents; // Use currently sorted/filtered list
+            const totalStudents = students.length;
+            let processedCount = 0;
 
-            const exportData = sortedStudents.map(s => {
-                const row = {
-                    'Student Name': s.student_name,
-                    'Reg ID': s.uni_reg_id,
-                    'Section': section_metadata?.section_name || '',
-                    'Overall Progress (%)': s.overall_progress,
-                };
+            const exportRows = [];
+            const CONCURRENT_LIMIT = 5;
 
-                // Add Course Data columns
-                if (course_performance) {
-                    course_performance.forEach(c => {
-                        const sCourse = s.courses.find(sc => sc.course_id === c.course_id);
-                        row[`${c.course_name} - Score`] = sCourse ? sCourse.score : '-';
-                        row[`${c.course_name} - Status`] = sCourse ? sCourse.status : '-';
-                    });
-                }
-                return row;
-            });
+            // Helper for batch processing
+            for (let i = 0; i < students.length; i += CONCURRENT_LIMIT) {
+                const batch = students.slice(i, i + CONCURRENT_LIMIT);
+
+                await Promise.all(batch.map(async (student) => {
+                    const row = {
+                        'Student Name': student.student_name,
+                        'Reg ID': student.uni_reg_id,
+                        'Section': section_metadata?.section_name || ''
+                    };
+
+                    try {
+                        // 1. LOOKUP (to get official student_id/uuid)
+                        const lookupRes = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.student.lookup}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ type: 'uni_reg_id', value: student.uni_reg_id }),
+                            credentials: 'include'
+                        });
+                        const lookupJson = await lookupRes.json();
+                        const fullStudent = Array.isArray(lookupJson.data) ? lookupJson.data[0] : lookupJson.data;
+
+                        if (fullStudent) {
+                            const studentId = fullStudent.student_id || fullStudent.uuid || fullStudent.id;
+                            const batchId = fullStudent.batch_id || fullStudent.batch;
+
+                            if (batchId) {
+                                // 2. FETCH PRACTICE COURSES
+                                const coursesRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.getPracticeCoursesByBatch}`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ batch_id: batchId }),
+                                    credentials: 'include'
+                                });
+                                const coursesJson = await coursesRes.json();
+                                let studentCourses = [];
+                                if (coursesJson.success && coursesJson.data) {
+                                    if (Array.isArray(coursesJson.data)) studentCourses = coursesJson.data;
+                                    else if (coursesJson.data.courses) studentCourses = coursesJson.data.courses;
+                                }
+
+                                // 3. PROCESS EACH REGULAR COURSE
+                                for (const sectionCourse of regularCourses) {
+                                    const enrolled = studentCourses.find(sc => sc.course_id === sectionCourse.course_id);
+                                    if (enrolled) {
+                                        // A. Fetch Structure
+                                        const structRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.courseStructure(sectionCourse.course_id)}`, { credentials: 'include' });
+                                        const structJson = await structRes.json();
+                                        const units = structJson.data || [];
+
+                                        let courseTotalComp = 0;
+
+                                        if (units.length > 0) {
+                                            const token = getAdminToken();
+                                            const headers = { 'Content-Type': 'application/json' };
+                                            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                                            // B. Fetch Unit Completions Parallel
+                                            await Promise.all(units.map(async (unit) => {
+                                                try {
+                                                    const cwRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.unitCompletion}`, {
+                                                        method: 'POST',
+                                                        headers,
+                                                        body: JSON.stringify({
+                                                            student_id: studentId,
+                                                            course_id: sectionCourse.course_id,
+                                                            unit_id: unit.unit_id
+                                                        }),
+                                                        credentials: 'include'
+                                                    });
+                                                    const cwJson = await cwRes.json();
+                                                    const unitVal = cwJson.success && cwJson.data ? (cwJson.data.overall_unit_completion || 0) : 0;
+
+                                                    // Add Unit Details to Row
+                                                    row[`${sectionCourse.course_name} - ${unit.unit_title || unit.unit_name || 'Unit'} (%)`] = unitVal;
+                                                    courseTotalComp += unitVal;
+
+                                                } catch (e) {
+                                                    row[`${sectionCourse.course_name} - ${unit.unit_title || 'Unit'} (%)`] = 0;
+                                                }
+                                            }));
+
+                                            const avgCourse = Math.round(courseTotalComp / units.length);
+                                            row[`${sectionCourse.course_name} - Overall (%)`] = avgCourse;
+                                        } else {
+                                            row[`${sectionCourse.course_name} - Overall (%)`] = 0;
+                                        }
+                                    } else {
+                                        row[`${sectionCourse.course_name} - Overall (%)`] = 'N/A';
+                                    }
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error(`Error processing student ${student.uni_reg_id}`, err);
+                    }
+
+                    // Add existing Exam data if available
+                    if (course_performance) {
+                        course_performance.forEach(c => {
+                            if (examDataMap[c.course_id]) {
+                                const sCourse = student.courses.find(sc => sc.course_id === c.course_id);
+                                row[`${c.course_name} - Score`] = sCourse ? sCourse.score : '-';
+                                row[`${c.course_name} - Status`] = sCourse ? sCourse.status : '-';
+                            }
+                        });
+                    }
+
+                    exportRows.push(row);
+                }));
+
+                processedCount += batch.length;
+                setExportProgress(Math.round((processedCount / totalStudents) * 100));
+            }
 
             const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.json_to_sheet(exportData);
+            const ws = XLSX.utils.json_to_sheet(exportRows);
 
             // Auto-width for columns
-            const colWidths = Object.keys(exportData[0] || {}).map(key => ({ wch: key.length + 5 }));
+            const colWidths = Object.keys(exportRows[0] || {}).map(key => ({ wch: key.length + 5 }));
             ws['!cols'] = colWidths;
 
             XLSX.utils.book_append_sheet(wb, ws, "Section Report");
 
             // Generate filename
             const date = new Date().toISOString().split('T')[0];
-            const fileName = `${section_metadata?.section_name}_Report_${date}.xlsx`;
+            const fileName = `${section_metadata?.section_name}_Detailed_Report_${date}.xlsx`;
 
             XLSX.writeFile(wb, fileName);
 
@@ -213,10 +325,6 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
     if (!data) return null;
 
     const { section_metadata, course_performance, student_performance } = data;
-
-    // Separate Courses and Exams based on API response
-    const regularCourses = course_performance?.filter(c => !examDataMap[c.course_id]) || [];
-    const examCourses = course_performance?.filter(c => examDataMap[c.course_id]) || [];
 
     return (
         <div className="fixed inset-0 z-[60] flex flex-col bg-gray-50 dark:bg-[#0B0F19] animate-in fade-in slide-in-from-right duration-300 overflow-hidden">
@@ -239,14 +347,24 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                     </div>
                 </div>
 
-                <button
-                    onClick={handleExport}
-                    disabled={isExporting}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20"
-                >
-                    {isExporting ? <CircularProgress percentage={0} size={20} strokeWidth={3} color="white" /> : <TrendingUp className="w-4 h-4" />}
-                    {isExporting ? 'Exporting...' : 'Export Excel'}
-                </button>
+                <div className="flex items-center gap-4">
+                    {isExporting && (
+                        <div className="flex flex-col items-end gap-1">
+                            <span className="text-xs font-medium text-cyan-600 dark:text-cyan-400">Processing... {exportProgress}%</span>
+                            <div className="w-32 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                <div className="h-full bg-cyan-500 transition-all duration-300" style={{ width: `${exportProgress}%` }} />
+                            </div>
+                        </div>
+                    )}
+                    <button
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20"
+                    >
+                        {isExporting ? <CircularProgress percentage={0} size={20} strokeWidth={3} color="white" /> : <TrendingUp className="w-4 h-4" />}
+                        {isExporting ? 'Exporting...' : 'Export Excel'}
+                    </button>
+                </div>
             </div>
 
             <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
@@ -318,15 +436,6 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                                         Student Name <ArrowUpDown className="w-3 h-3 inline ml-1 opacity-50" />
                                     </th>
                                     <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300">Reg ID</th>
-                                    <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-white/5" onClick={() => requestSort('overall_progress')}>
-                                        Progress <ArrowUpDown className="w-3 h-3 inline ml-1 opacity-50" />
-                                    </th>
-                                    {/* Dynamic Course Headers (Exclude Exams) */}
-                                    {regularCourses.map(c => (
-                                        <th key={c.course_id} className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300 text-center border-l border-gray-200 dark:border-white/5">
-                                            {c.course_name}
-                                        </th>
-                                    ))}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -338,31 +447,6 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                                             </div>
                                         </td>
                                         <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{student.uni_reg_id}</td>
-                                        <td className="p-4 text-center">
-                                            <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-                                                <div className={`w-2 h-2 rounded-full ${student.overall_progress > 75 ? 'bg-emerald-500' : student.overall_progress > 40 ? 'bg-yellow-500' : 'bg-red-500'}`} />
-                                                <span className="text-sm font-bold text-gray-900 dark:text-white">{student.overall_progress}%</span>
-                                            </div>
-                                        </td>
-                                        {/* Dynamic Course Cells (Exclude Exams) */}
-                                        {regularCourses.map(c => {
-                                            const courseData = student.courses.find(sc => sc.course_id === c.course_id);
-                                            return (
-                                                <td key={c.course_id} className="p-4 text-center border-l border-gray-200 dark:border-white/5">
-                                                    {courseData ? (
-                                                        <div className="flex flex-col items-center">
-                                                            <span className="font-bold text-gray-900 dark:text-white">{courseData.score}</span>
-                                                            {courseData.status !== 'N/A' && (
-                                                                <span className={`text-[10px] px-1.5 rounded uppercase tracking-wider font-bold ${courseData.status === 'Pass' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'
-                                                                    }`}>
-                                                                    {courseData.status}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    ) : <span className="text-gray-400 dark:text-gray-600">-</span>}
-                                                </td>
-                                            );
-                                        })}
                                     </tr>
                                 ))}
                             </tbody>
