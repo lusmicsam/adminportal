@@ -10,6 +10,9 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata = {
   title: "Admin Portal",
   description: "Ed-tech Admin Platform",
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 import { AuthProvider } from "@/context/AuthContext";

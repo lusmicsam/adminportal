@@ -381,29 +381,8 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         {regularCourses.map(course => (
                             <div key={course.course_id} className="p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none relative overflow-hidden">
                                 <div className="relative z-10">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-bold text-gray-900 dark:text-white text-sm max-w-[70%]">{course.course_name}</h4>
-                                        <CircularProgress
-                                            percentage={courseCompletions[course.course_id] || 0}
-                                            size={40}
-                                            strokeWidth={4}
-                                            color="emerald"
-                                        />
-                                    </div>
-
-                                    <div className="flex justify-between items-end mb-1 mt-2">
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] text-gray-500 uppercase tracking-wider">Avg Score</span>
-                                            <span className="text-lg font-bold text-cyan-600 dark:text-cyan-400">{course.average_score}%</span>
-                                        </div>
-                                        <div className="flex flex-col items-end">
-                                            <span className="text-[10px] text-gray-500 uppercase tracking-wider">Completion</span>
-                                            <span className="text-sm font-bold text-emerald-500">{courseCompletions[course.course_id] || 0}%</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="w-full bg-gray-200 dark:bg-white/10 h-1 rounded-full overflow-hidden mt-2">
-                                        <div className="bg-cyan-500 h-full rounded-full" style={{ width: `${course.average_score}%` }} />
+                                    <div className="flex justify-between items-start">
+                                        <h4 className="font-bold text-gray-900 dark:text-white text-sm w-full">{course.course_name}</h4>
                                     </div>
                                 </div>
                             </div>

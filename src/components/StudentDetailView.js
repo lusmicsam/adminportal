@@ -977,7 +977,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
             ) : (
                 <>
                     {/* Summary Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="p-5 rounded-2xl bg-white dark:bg-white/5 dark:bg-gradient-to-br dark:from-emerald-500/10 dark:to-green-500/5 border border-gray-200 dark:border-emerald-500/20 backdrop-blur-sm shadow-sm dark:shadow-none">
                             <div className="text-gray-500 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">Total Attempts</div>
                             <div className="text-3xl font-bold text-gray-900 dark:text-white">{history?.length || 0}</div>
@@ -990,12 +990,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                     : '-'}
                             </div>
                         </div>
-                        <div className="p-5 rounded-2xl bg-white dark:bg-white/5 dark:bg-gradient-to-br dark:from-purple-500/10 dark:to-pink-500/5 border border-gray-200 dark:border-purple-500/20 backdrop-blur-sm shadow-sm dark:shadow-none">
-                            <div className="text-gray-500 dark:text-purple-400 text-xs font-bold uppercase tracking-wider mb-2">Avg. Time</div>
-                            <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                                {history?.length > 0 ? '4m 32s' : '-'}
-                            </div>
-                        </div>
+
                     </div>
 
                     <h3 className="text-xl font-bold mt-8 mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
