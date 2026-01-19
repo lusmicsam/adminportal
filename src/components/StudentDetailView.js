@@ -4,11 +4,13 @@ import { CircularProgress } from './CircularProgress';
 import { API_CONFIG } from '../utils/api';
 import { getAdminToken } from '../utils/cookies';
 import { Skeleton } from './Skeletons';
+import { useAuth } from '../context/AuthContext';
 
 export default function StudentDetailView({ student, onBack }) {
     const [viewLink, setViewLink] = useState('courses'); // courses | deep_dive
     const [courses, setCourses] = useState([]);
     const [loadingCourses, setLoadingCourses] = useState(false);
+    const { user } = useAuth();
 
     // Deep Dive State
     const [selectedCourse, setSelectedCourse] = useState(null);
@@ -45,7 +47,11 @@ export default function StudentDetailView({ student, onBack }) {
                     const lookupRes = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.student.lookup}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ type: 'uni_reg_id', value: currentStudent.uni_reg_id || currentStudent.reg_id }),
+                        body: JSON.stringify({
+                            type: 'uni_reg_id',
+                            value: currentStudent.uni_reg_id || currentStudent.reg_id,
+                            university_id: user?.university_id || user?.universityId || user?.id
+                        }),
                         credentials: 'include'
                     });
                     const lookupJson = await lookupRes.json();

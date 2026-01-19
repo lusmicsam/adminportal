@@ -195,7 +195,11 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         const lookupRes = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.student.lookup}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ type: 'uni_reg_id', value: student.uni_reg_id }),
+                            body: JSON.stringify({
+                                type: 'uni_reg_id',
+                                value: student.uni_reg_id,
+                                university_id: userId
+                            }),
                             credentials: 'include'
                         });
                         const lookupJson = await lookupRes.json();

@@ -135,7 +135,11 @@ export default function DeepDiveDashboard() {
                 const res = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.student.lookup}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: 'uni_reg_id', value: searchQuery }),
+                    body: JSON.stringify({
+                        type: 'uni_reg_id',
+                        value: searchQuery,
+                        university_id: user.university_id || user.universityId || user.id
+                    }),
                     credentials: 'include'
                 });
                 const data = await res.json();
@@ -223,7 +227,11 @@ export default function DeepDiveDashboard() {
             const res = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.student.lookup}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: section }), // Using heuristic lookup
+                body: JSON.stringify({
+                    type: 'section',
+                    value: section,
+                    university_id: user.university_id || user.universityId || user.id
+                }),
                 credentials: 'include'
             });
             const data = await res.json();

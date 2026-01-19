@@ -22,6 +22,8 @@ export const API_CONFIG = {
 
         getPracticeCoursesByBatch: '/api/university/admin/get-practice-courses-by-batch',
         examDetails: '/api/auth/teacher/teacher/analytics/section-exam-progress',
+        checkDetails: '/api/university/admin/check-details',
+        updateDetails: '/api/university/admin/update-details',
     },
 
     // Master Data
