@@ -111,7 +111,7 @@ export default function DeepDiveDashboard() {
     };
 
     const fetchSections = async () => {
-        const data = await fetchWithAuth(`${API_CONFIG.baseUrl.student}${API_CONFIG.masters.sections}`);
+        const data = await fetchWithAuth(`${API_CONFIG.baseUrl.admin}${API_CONFIG.masters.sections}`);
         const list = Array.isArray(data) ? data : [];
         setSections(list);
         setMasterSections(list);
