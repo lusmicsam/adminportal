@@ -196,13 +196,7 @@ export default function BatchDetailView({ batch, onBack, onSectionSelect }) {
                                                 <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 -translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all" />
                                             </div>
                                             <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-1">{sec.section_name}</h4>
-                                            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 gap-3">
-                                                <span>{sec.student_count || 0} Students</span>
-                                                <span className="w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-600" />
-                                                <span className={sec.progress >= 70 ? 'text-emerald-500 dark:text-emerald-400' : 'text-amber-500 dark:text-amber-400'}>
-                                                    {sec.progress || 0}% Avg
-                                                </span>
-                                            </div>
+
                                         </button>
                                     ))
                                 ) : (
