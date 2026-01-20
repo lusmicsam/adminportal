@@ -225,61 +225,93 @@ export default function StudentDetailView({ student, onBack }) {
 
     const fetchHistory = async (unitId, subUnitId, type) => {
         setLoadingHistory(true);
+        const MAX_ATTEMPTS = 5;
+        const allAttempts = [];
+
         try {
-            const payload = {
-                student_id: fullStudent.student_id || fullStudent.uuid || fullStudent.uni_reg_id || fullStudent.reg_id,
-                course_id: selectedCourse.course_id,
-                unit_id: unitId,
-                sub_unit_id: subUnitId,
-                result_type: type,
-                attempt: 1 // Default to 1 as required by API
-            };
+            for (let i = 1; i <= MAX_ATTEMPTS; i++) {
+                const payload = {
+                    student_id: fullStudent.student_id || fullStudent.uuid || fullStudent.uni_reg_id || fullStudent.reg_id,
+                    course_id: selectedCourse.course_id,
+                    unit_id: unitId,
+                    sub_unit_id: subUnitId,
+                    result_type: type,
+                    attempt: i
+                };
 
-            console.log("Fetching History Payload:", payload);
-            const token = getAdminToken();
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-            const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.subUnitDetails}`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(payload),
-                credentials: 'include'
-            });
-
-            if (!res.ok) {
-                const errText = await res.text();
-                // console.error("History Fetch Error:", res.status, errText); // Silent fail or log
-                try {
-                    // const errJson = JSON.parse(errText);
-                    // if (errJson.error) alert(`Error: ${errJson.error}`);
-                } catch (e) { /* ignore */ }
-                // throw new Error(`Server returned ${res.status}`);
-            }
-
-            const data = await res.json();
-            if (data) {
-                // Handle Detail Response (Single Object) -> Wrap in List
-                if (data.data && data.data.overview) {
-                    const detail = data.data;
-                    const summaryItem = {
-                        ...detail, // CRITICAL: Preserve full details for cache!
-                        attempt: detail.overview.attempt_number || 1,
-                        attempt_count: detail.overview.attempt_number || 1,
-                        marks_obtained: detail.overview.total_score,
-                        total_marks: detail.overview.max_score,
-                        score: detail.overview.total_score,
-                    };
-                    setSubUnitHistory([summaryItem]);
-                } else {
-                    // Fallback to List Response
-                    const historyList = data.data?.history_list || (Array.isArray(data.data) ? data.data : []);
-                    setSubUnitHistory(historyList);
+                // console.log(`Fetching Attempt ${i} Payload:`, payload);
+                const token = getAdminToken();
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
                 }
-            } else {
-                setSubUnitHistory([]);
+
+                try {
+                    const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.subUnitDetails}`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify(payload),
+                        credentials: 'include'
+                    });
+
+                    // If request fails physically (500, 404, etc.), we likely stop unless it's just 'not found' which comes as 200 { success: false } usually?
+                    // But if API returns 404 for no data, we catch it. 
+                    // Let's assume API returns 200 with success:false if no data, based on user input.
+
+                    if (!res.ok) {
+                        // If it's a real server error, we might want to stop
+                        break;
+                    }
+
+                    const data = await res.json();
+
+                    if (!data.success) {
+                        // Check message for "No data found" signal
+                        if (data.message && data.message.includes("No data found")) {
+                            break; // Stop loop, no more attempts
+                        }
+                    }
+
+                    if (data && data.success && data.data) {
+                        // Handle Detail Response (Single Object) -> Wrap in List
+                        let summaryItem = null;
+
+                        if (data.data.overview) {
+                            const detail = data.data;
+                            summaryItem = {
+                                ...detail, // CACHE: Preserve full details 
+                                attempt: detail.overview.attempt_number || i,
+                                attempt_count: detail.overview.attempt_number || i,
+                                marks_obtained: detail.overview.total_score,
+                                total_marks: detail.overview.max_score,
+                                score: detail.overview.total_score,
+                            };
+                        } else if (Array.isArray(data.data) && data.data.length > 0) {
+                            // If it returned a list (legacy behavior?), just take the first if we asked for specific attempt? 
+                            // Or maybe it's the history list itself. Use caution.
+                            // Given the payload asks for `attempt: i`, we expect a specific attempt detail.
+                            // If the API ignores `attempt` param and returns ALL, we would just setSubUnitHistory(data.data) and break.
+                            // BUT user said "fetching attempty 1 by default", implies we need explicit loop.
+                            summaryItem = data.data[0];
+                        }
+
+                        if (summaryItem) {
+                            allAttempts.push(summaryItem);
+                        }
+                    } else {
+                        break; // No data or success:false without specific message
+                    }
+
+                } catch (innerErr) {
+                    console.warn(`Attempt ${i} fetch failed`, innerErr);
+                    break;
+                }
             }
+
+            // Sort attempts descending (newest first)
+            allAttempts.sort((a, b) => (b.attempt || 0) - (a.attempt || 0));
+            setSubUnitHistory(allAttempts);
+
         } catch (e) {
             console.error(e);
             setSubUnitHistory([]);
@@ -908,23 +940,45 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                         </div>
                                     )}
 
-                                    {/* Test Cases (Coding) - HIDDEN as per user request */}
-                                    {/* {sub.test_cases && sub.test_cases.length > 0 && sub.test_cases[0].status !== 'N/A' && (
+                                    {/* Test Cases (Coding) - Detailed Input/Output View */}
+                                    {sub.test_cases && sub.test_cases.length > 0 && (
                                         <div className="p-4 bg-gray-50 dark:bg-black/10 border-t border-gray-200 dark:border-white/5">
-                                            <div className="text-[10px] font-bold text-gray-500 uppercase mb-2">Test Cases</div>
-                                            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                            <div className="text-[10px] font-bold text-gray-500 uppercase mb-3">Test Cases Details</div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 {sub.test_cases.map((tc, tci) => (
-                                                    <div key={tci} className={`px-2 py-1.5 rounded text-[10px] border flex flex-col items-center justify-center text-center ${tc.status === 'Passed'
-                                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                                                        : 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20'
-                                                        }`}>
-                                                        <span className="font-semibold mb-0.5">{tc.name}</span>
-                                                        <span className="opacity-70">{tc.time || '0ms'}</span>
+                                                    <div key={tci} className="p-3 rounded-lg bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 hover:border-cyan-500/30 transition-colors">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-bold text-xs text-gray-900 dark:text-gray-200">{tc.name}</span>
+                                                                {tc.name?.toLowerCase().includes('hidden') && (
+                                                                    <span className="text-[9px] uppercase tracking-wider bg-gray-200 dark:bg-white/10 px-1.5 py-0.5 rounded text-gray-500 dark:text-gray-400">Hidden</span>
+                                                                )}
+                                                            </div>
+                                                            {/* Keeping status indicator very subtle/small if needed, or removing as requested. 
+                                                                User said "not pass fail status", so I will omit the large colored badges. 
+                                                                I'll just show the time or small dot if useful, but primarily data. 
+                                                            */}
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <div>
+                                                                <div className="text-[9px] uppercase tracking-wider text-gray-500 mb-1">Input</div>
+                                                                <div className="bg-gray-100 dark:bg-black/30 p-2 rounded text-xs font-mono text-gray-700 dark:text-gray-300 break-all">
+                                                                    {tc.input || '-'}
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[9px] uppercase tracking-wider text-gray-500 mb-1">Expected Output</div>
+                                                                <div className="bg-gray-100 dark:bg-black/30 p-2 rounded text-xs font-mono text-gray-700 dark:text-gray-300 break-all">
+                                                                    {tc.expected_output || '-'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
-                                    )} */}
+                                    )}
                                 </div>
                             ))}
                         </div>
