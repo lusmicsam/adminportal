@@ -884,7 +884,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                                 {resultType === 'coding' ? 'Coding Score' : 'MCQ Score'}
                                             </div>
                                             <div className={`text-2xl font-bold ${sub.score_obtained > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                {sub.score_obtained}
+                                                {resultType === 'coding' ? sub.score_obtained * 10 : sub.score_obtained}
                                                 <span className="text-sm font-normal text-gray-500">
                                                     / {resultType === 'coding'
                                                         ? (sub.test_cases?.filter(tc => tc.name?.toLowerCase().includes('hidden')).length || 0) * 10
@@ -953,11 +953,29 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                                                 {tc.name?.toLowerCase().includes('hidden') && (
                                                                     <span className="text-[9px] uppercase tracking-wider bg-gray-200 dark:bg-white/10 px-1.5 py-0.5 rounded text-gray-500 dark:text-gray-400">Hidden</span>
                                                                 )}
+                                                                {(() => {
+                                                                    const isHidden = tc.name?.toLowerCase().includes('hidden');
+                                                                    if (isHidden && sub.formattedResult) {
+                                                                        // Parse "Hidden Case X"
+                                                                        const parts = tc.name.match(/Hidden Case (\d+)/i);
+                                                                        if (parts && parts[1]) {
+                                                                            const caseNum = parts[1];
+                                                                            const resultKey = `testCase${caseNum}`;
+                                                                            // Find the result object
+                                                                            const resultObj = sub.formattedResult.find(r => r[resultKey]);
+                                                                            if (resultObj) {
+                                                                                const passed = resultObj[resultKey]?.testCasePassed;
+                                                                                return passed ? (
+                                                                                    <span className="text-[9px] uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded font-bold">Passed</span>
+                                                                                ) : (
+                                                                                    <span className="text-[9px] uppercase tracking-wider bg-red-500/10 border border-red-500/20 text-red-400 px-1.5 py-0.5 rounded font-bold">Failed</span>
+                                                                                );
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    return null;
+                                                                })()}
                                                             </div>
-                                                            {/* Keeping status indicator very subtle/small if needed, or removing as requested. 
-                                                                User said "not pass fail status", so I will omit the large colored badges. 
-                                                                I'll just show the time or small dot if useful, but primarily data. 
-                                                            */}
                                                         </div>
 
                                                         <div className="space-y-2">
