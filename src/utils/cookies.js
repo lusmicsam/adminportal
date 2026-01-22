@@ -27,6 +27,14 @@ export function getCookie(name) {
 export function setAdminToken(token) {
     if (typeof window === 'undefined') return;
     localStorage.setItem('admin_token', token);
+
+    // MICROSOFT EDGE / NEXT.JS MIDDLEWARE SUPPORT
+    // We must set a cookie so the server-side middleware can see the token.
+    // Set cookie to expire in 7 days (matches typical JWT validity)
+    const d = new Date();
+    d.setTime(d.getTime() + (7 * 24 * 60 * 60 * 1000));
+    const expires = "expires=" + d.toUTCString();
+    document.cookie = "admin_token=" + token + ";" + expires + ";path=/;SameSite=Strict";
 }
 
 /**
@@ -56,4 +64,6 @@ export function getAdminToken() {
 export function clearAdminToken() {
     if (typeof window === 'undefined') return;
     localStorage.removeItem('admin_token');
+    // Clear the cookie by setting expiry to past date
+    document.cookie = "admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }

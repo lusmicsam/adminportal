@@ -884,7 +884,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                                 {resultType === 'coding' ? 'Coding Score' : 'MCQ Score'}
                                             </div>
                                             <div className={`text-2xl font-bold ${sub.score_obtained > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                {resultType === 'coding' ? sub.score_obtained * 10 : sub.score_obtained}
+                                                {resultType === 'coding' ? sub.score_obtained : sub.score_obtained}
                                                 <span className="text-sm font-normal text-gray-500">
                                                     / {resultType === 'coding'
                                                         ? (sub.test_cases?.filter(tc => tc.name?.toLowerCase().includes('hidden')).length || 0) * 10
