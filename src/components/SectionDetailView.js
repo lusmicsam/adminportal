@@ -140,9 +140,24 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
 
     const [inspectingTest, setInspectingTest] = useState(null);
 
+    // --- SEARCH LOGIC ---
+    const [searchQuery, setSearchQuery] = useState('');
+
     const sortedStudents = React.useMemo(() => {
         if (!data?.student_performance) return [];
-        let sortable = [...data.student_performance];
+
+        let filtered = data.student_performance;
+
+        // Filter by Search Query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(s =>
+                s.student_name.toLowerCase().includes(query) ||
+                s.uni_reg_id.toLowerCase().includes(query)
+            );
+        }
+
+        let sortable = [...filtered];
         if (sortConfig.key) {
             sortable.sort((a, b) => {
                 if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -151,7 +166,7 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
             });
         }
         return sortable;
-    }, [data, sortConfig]);
+    }, [data, sortConfig, searchQuery]);
 
     const requestSort = (key) => {
         let direction = 'asc';
@@ -407,9 +422,23 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
 
                 {/* RIGHT: Student Table */}
                 <div className="flex-1 p-6 overflow-hidden flex flex-col">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <Users className="w-5 h-5 text-purple-500 dark:text-purple-400" /> Student Performance
-                    </h3>
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Users className="w-5 h-5 text-purple-500 dark:text-purple-400" /> Student Performance
+                        </h3>
+
+                        {/* Search Input */}
+                        <div className="relative w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search student..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm text-gray-900 dark:text-white placeholder-gray-400 transition-all"
+                            />
+                        </div>
+                    </div>
 
                     <div className="flex-1 overflow-auto custom-scrollbar border border-gray-200 dark:border-white/10 rounded-xl bg-white dark:bg-white/5 shadow-sm dark:shadow-none">
                         <table className="w-full text-left border-collapse">
