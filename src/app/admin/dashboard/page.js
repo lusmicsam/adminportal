@@ -6,8 +6,9 @@ import { API_CONFIG } from '../../../utils/api';
 import { getAdminToken } from '../../../utils/cookies';
 import { BatchSkeleton, TeacherSkeleton, ListSkeleton, Skeleton, SectionSkeleton, DashboardSkeleton } from '../../../components/Skeletons';
 import StudentDetailView from '../../../components/StudentDetailView';
-import TeacherDetailView from '../../../components/TeacherDetailView'; // Added
-import { Users, LayoutGrid, Layers, GraduationCap, Loader2, LogOut, ChevronRight, Search, FileText, Clock, AlertCircle, Sun, Moon } from "lucide-react";
+import TeacherDetailView from '../../../components/TeacherDetailView';
+import ChangePasswordModal from '../../../components/ChangePasswordModal';
+import { Users, LayoutGrid, Layers, GraduationCap, Loader2, LogOut, ChevronRight, Search, FileText, Clock, AlertCircle, Sun, Moon, Key } from "lucide-react";
 import Link from 'next/link';
 import SectionDetailView from '../../../components/SectionDetailView';
 import BatchDetailView from '../../../components/BatchDetailView';
@@ -22,6 +23,7 @@ export default function DeepDiveDashboard() {
     const [hasSearched, setHasSearched] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showError, setShowError] = useState(false);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
     // Primary Data Lists
     const [batches, setBatches] = useState([]);
@@ -274,6 +276,10 @@ export default function DeepDiveDashboard() {
 
     return (
         <div className="min-h-screen bg-slate-200 dark:bg-[#0B0F19] text-gray-900 dark:text-gray-100 font-sans selection:bg-cyan-500/30">
+            <ChangePasswordModal
+                isOpen={isPasswordModalOpen}
+                onClose={() => setIsPasswordModalOpen(false)}
+            />
             {/* Deep Dive Views (Overlay) */}
 
             {/* LEVEL 1: Batch Detail View */}
@@ -347,6 +353,15 @@ export default function DeepDiveDashboard() {
                                 >
                                     {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                                 </button>
+
+                                <button
+                                    onClick={() => setIsPasswordModalOpen(true)}
+                                    className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 border border-transparent transition-all font-medium text-sm flex items-center gap-2"
+                                    title="Change Password"
+                                >
+                                    <Key className="w-4 h-4" /> <span className="hidden sm:inline">Change Password</span>
+                                </button>
+
                                 <button onClick={logout} className="px-6 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-300 border border-red-500/20 hover:bg-red-500/20 transition flex items-center gap-2">
                                     <LogOut className="w-4 h-4" />
                                     Logout

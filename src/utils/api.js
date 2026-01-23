@@ -24,6 +24,7 @@ export const API_CONFIG = {
         examDetails: '/api/auth/teacher/teacher/analytics/section-exam-progress',
         checkDetails: '/api/university/admin/check-details',
         updateDetails: '/api/university/admin/update-details',
+        updatePassword: '/api/university/admin/update-password',
     },
 
     // Master Data
