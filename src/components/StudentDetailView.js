@@ -682,7 +682,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                 ) : attemptDetails ? (
                     <>
                         {/* 1. Overview Card */}
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
                                 <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Attempt</div>
                                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -701,12 +701,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                     {attemptDetails.overview.percentage}%
                                 </div>
                             </div>
-                            <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
-                                <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Status</div>
-                                <div className={`text-xl font-bold ${attemptDetails.overview.status === 'Passed' ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
-                                    {attemptDetails.overview.status}
-                                </div>
-                            </div>
+
                             <div className="p-5 rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
                                 <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Result Type</div>
                                 <div className="text-xl font-bold text-cyan-600 dark:text-cyan-400 capitalize">{resultType}</div>
