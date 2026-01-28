@@ -8,10 +8,11 @@ import { BatchSkeleton, TeacherSkeleton, ListSkeleton, Skeleton, SectionSkeleton
 import StudentDetailView from '../../../components/StudentDetailView';
 import TeacherDetailView from '../../../components/TeacherDetailView';
 import ChangePasswordModal from '../../../components/ChangePasswordModal';
-import { Users, LayoutGrid, Layers, GraduationCap, Loader2, LogOut, ChevronRight, Search, FileText, Clock, AlertCircle, Sun, Moon, Key } from "lucide-react";
+import { Users, LayoutGrid, Layers, GraduationCap, Loader2, LogOut, ChevronRight, Search, FileText, Clock, AlertCircle, Sun, Moon, Key, BookOpen } from "lucide-react";
 import Link from 'next/link';
 import SectionDetailView from '../../../components/SectionDetailView';
 import BatchDetailView from '../../../components/BatchDetailView';
+import CourseDetailView from '../../../components/CourseDetailView'; // [NEW]
 import { useTheme } from '../../../context/ThemeContext';
 
 export default function DeepDiveDashboard() {
@@ -32,12 +33,15 @@ export default function DeepDiveDashboard() {
     const [students, setStudents] = useState([]);
     const [teachers, setTeachers] = useState([]);
     const [masterTeachers, setMasterTeachers] = useState([]); // Cache for client-side search
+    const [courses, setCourses] = useState([]); // [NEW] Courses List
+    const [masterCourses, setMasterCourses] = useState([]); // [NEW] Cache for search
 
     // --- Deep Dive States ---
     const [inspectingStudent, setInspectingStudent] = useState(null);
     const [inspectingTeacher, setInspectingTeacher] = useState(null);
     const [inspectingSection, setInspectingSection] = useState(null);
     const [inspectingBatch, setInspectingBatch] = useState(null);
+    const [inspectingCourse, setInspectingCourse] = useState(null); // [NEW] Deep dive for course
 
     // 1. Batch/Course Navigation
     const [selectedBatch, setSelectedBatch] = useState(null);
@@ -68,6 +72,7 @@ export default function DeepDiveDashboard() {
             if (view === 'teachers' && teachers.length === 0) fetchTeachers();
             if (view === 'batches' && batches.length === 0) fetchBatches();
             if (view === 'sections' && sections.length === 0) fetchSections();
+            if (view === 'courses' && courses.length === 0) fetchCourses(); // [NEW]
         }
     }, [authLoading, user, view]);
 
@@ -117,6 +122,47 @@ export default function DeepDiveDashboard() {
         const list = Array.isArray(data) ? data : [];
         setSections(list);
         setMasterSections(list);
+    };
+
+    // [NEW] Fetch Courses
+    const fetchCourses = async () => {
+        setLoading(true);
+        try {
+            // Using uni_reg_id as the 'email' payload as per instruction "email is similar to admin registration number"
+            // Fallback to actual email if reg_id is missing
+            const identifier = user.uni_reg_id || user.email;
+
+            const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.getAllCourses}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: identifier }),
+                credentials: 'include'
+            });
+            const data = await res.json();
+
+            // Handle various response structures
+            let list = [];
+            if (data.data && Array.isArray(data.data.courses)) {
+                // Structure: { data: { courses: [...] } }
+                list = data.data.courses;
+            } else if (data.courses && Array.isArray(data.courses)) {
+                // Structure: { courses: [...] }
+                list = data.courses;
+            } else if (Array.isArray(data.data)) {
+                // Structure: { data: [...] }
+                list = data.data;
+            } else if (Array.isArray(data)) {
+                // Structure: [...]
+                list = data;
+            }
+
+            setCourses(list);
+            setMasterCourses(list);
+        } catch (e) {
+            console.error("Failed to fetch courses:", e);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSearch = async (e) => {
@@ -182,6 +228,14 @@ export default function DeepDiveDashboard() {
                     String(s).toLowerCase().includes(lowerQuery)
                 );
                 setSections(filteredSections);
+            } else if (view === 'courses') {
+                // [NEW] Client-side filtering for courses
+                const lowerQuery = searchQuery.toLowerCase();
+                const filtered = masterCourses.filter(c =>
+                    (c.course_name && c.course_name.toLowerCase().includes(lowerQuery)) ||
+                    (c.course_code && c.course_code.toLowerCase().includes(lowerQuery))
+                );
+                setCourses(filtered);
             }
         } catch (e) { console.error("Search Error", e); }
         finally { setLoading(false); }
@@ -325,12 +379,20 @@ export default function DeepDiveDashboard() {
                 />
             )}
 
+            {/* [NEW] Course Detail View */}
+            {inspectingCourse && (
+                <CourseDetailView
+                    course={inspectingCourse}
+                    onBack={() => setInspectingCourse(null)}
+                />
+            )}
+
             {/* Background Effects */}
             <div className="fixed -top-40 -left-48 h-[38rem] w-[38rem] bg-cyan-500/10 blur-3xl rounded-full pointer-events-none opacity-50 dark:opacity-100" />
             <div className="fixed -bottom-44 -right-40 h-[42rem] w-[42rem] bg-indigo-500/10 blur-3xl rounded-full pointer-events-none opacity-50 dark:opacity-100" />
 
             {/* Main Dashboard Content */}
-            <div className={`transition-all duration-300 ${(inspectingStudent || inspectingSection) ? 'opacity-0 pointer-events-none scale-95 fixed inset-0' : 'opacity-100 scale-100'}`}>
+            <div className={`transition-all duration-300 ${(inspectingStudent || inspectingSection || inspectingCourse) ? 'opacity-0 pointer-events-none scale-95 fixed inset-0' : 'opacity-100 scale-100'}`}>
                 <div className="relative text-gray-900 dark:text-white p-6 md:p-10 font-sans">
 
                     <div className="max-w-7xl mx-auto relative z-10 space-y-8">
@@ -362,7 +424,13 @@ export default function DeepDiveDashboard() {
                                     <Key className="w-4 h-4" /> <span className="hidden sm:inline">Change Password</span>
                                 </button>
 
-                                <button onClick={logout} className="px-6 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-300 border border-red-500/20 hover:bg-red-500/20 transition flex items-center gap-2">
+                                <button onClick={() => {
+                                    localStorage.clear();
+                                    document.cookie.split(";").forEach((c) => {
+                                        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                                    });
+                                    logout();
+                                }} className="px-6 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-300 border border-red-500/20 hover:bg-red-500/20 transition flex items-center gap-2">
                                     <LogOut className="w-4 h-4" />
                                     Logout
                                 </button>
@@ -370,24 +438,25 @@ export default function DeepDiveDashboard() {
                         </div>
 
                         {/* Main Navigation */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             {[
                                 { id: 'batches', label: 'Batches', icon: LayoutGrid, color: 'purple' },
                                 { id: 'sections', label: 'Sections', icon: Layers, color: 'emerald' },
                                 { id: 'teachers', label: 'Teachers', icon: Users, color: 'cyan' },
                                 { id: 'students', label: 'Students', icon: GraduationCap, color: 'blue' },
+                                { id: 'courses', label: 'Courses', icon: BookOpen, color: 'orange' }, // [NEW]
                             ].map(item => (
                                 <button
                                     key={item.id}
                                     onClick={() => { setView(item.id); setSearchQuery(''); }}
                                     className={`p-5 rounded-2xl border transition-all duration-300 text-left relative overflow-hidden group
                                 ${view === item.id
-                                            ? `bg-${item.color}-100 dark:bg-${item.color}-500/10 border-${item.color}-300 dark:border-${item.color}-500/20 shadow-md dark:shadow-[0_0_10px_rgba(var(--${item.color}-rgb),0.1)]`
+                                            ? `bg-white dark:bg-white/10 border-${item.color}-500 shadow-md ring-1 ring-${item.color}-500/50`
                                             : 'bg-slate-100 dark:bg-white/5 border-slate-300 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/10 shadow-sm'
                                         }`}
                                 >
                                     <div className={`w-12 h-12 rounded-xl mb-3 flex items-center justify-center transition-colors
-                                ${view === item.id ? `bg-${item.color}-500/20 text-${item.color}-600 dark:text-${item.color}-400` : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'}`}>
+                                ${view === item.id ? `bg-${item.color}-50 text-${item.color}-600 dark:bg-${item.color}-500/20 dark:text-${item.color}-400` : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'}`}>
                                         <item.icon className="w-6 h-6" />
                                     </div>
                                     <span className={`block text-xl font-bold ${view === item.id ? `text-${item.color}-600 dark:text-${item.color}-400` : 'text-gray-900 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white'}`}>
@@ -407,11 +476,12 @@ export default function DeepDiveDashboard() {
                                         {view === 'batches' && batches.length}
                                         {view === 'sections' && sections.length}
                                         {view === 'students' && students.length}
+                                        {view === 'courses' && courses.length}
                                     </span>
                                 </h2>
 
                                 <div className="flex-1 flex justify-center px-4 md:px-12 w-full">
-                                    {(view === 'students' || view === 'teachers' || view === 'sections') && (
+                                    {(view === 'students' || view === 'teachers' || view === 'sections' || view === 'courses') && (
                                         <form onSubmit={handleSearch} className="relative w-full max-w-2xl">
                                             <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-500" />
                                             <input
@@ -419,7 +489,8 @@ export default function DeepDiveDashboard() {
                                                 placeholder={
                                                     view === 'teachers' ? "Search by Name or Reg ID..." :
                                                         view === 'sections' ? "Search Section Name..." :
-                                                            "Search by Uni Reg ID..."
+                                                            view === 'courses' ? "Search Course Name..." :
+                                                                "Search by Uni Reg ID..."
                                                 }
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -617,6 +688,50 @@ export default function DeepDiveDashboard() {
                                                 </div>
                                             ))}
                                         </>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* [NEW] View: Courses */}
+                            {view === 'courses' && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {loading ? (
+                                        <>
+                                            <BatchSkeleton />
+                                            <BatchSkeleton />
+                                            <BatchSkeleton />
+                                            <BatchSkeleton />
+                                        </>
+                                    ) : (
+                                        courses.map((course, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setInspectingCourse(course)}
+                                                className="text-left w-full glass-panel p-5 rounded-2xl border border-slate-300 dark:border-white/5 hover:border-orange-500/30 hover:bg-orange-50 dark:hover:bg-orange-500/5 transition-all group relative overflow-hidden bg-slate-100 dark:bg-transparent shadow-sm dark:shadow-none"
+                                            >
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center border border-orange-500/20">
+                                                        <BookOpen className="w-6 h-6" />
+                                                    </div>
+                                                </div>
+
+                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1 line-clamp-1" title={course.course_name}>
+                                                    {course.course_name || 'Untitled Course'}
+                                                </h3>
+
+
+                                                <div className="flex justify-between items-center text-xs text-slate-500 font-medium pt-3 border-t border-slate-200 dark:border-white/5">
+                                                    <span>Click to view content</span>
+                                                    <ChevronRight className="w-4 h-4 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                </div>
+                                            </button>
+                                        ))
+                                    )}
+                                    {!loading && courses.length === 0 && (
+                                        <div className="col-span-full text-center text-gray-500 py-20 flex flex-col items-center">
+                                            <BookOpen className="w-12 h-12 mb-4 opacity-20" />
+                                            No courses found.
+                                        </div>
                                     )}
                                 </div>
                             )}

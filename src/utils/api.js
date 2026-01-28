@@ -25,6 +25,8 @@ export const API_CONFIG = {
         checkDetails: '/api/university/admin/check-details',
         updateDetails: '/api/university/admin/update-details',
         updatePassword: '/api/university/admin/update-password',
+        getAllCourses: '/api/university/admin/get-courses-by-email',
+        getCourseContent: '/api/university/admin/course/full-content',
     },
 
     // Master Data
