@@ -261,6 +261,15 @@ export default function CourseDetailView({ course, onBack }) {
 
             return (
                 <div className="space-y-8">
+                    {/* Images */}
+                    {item.images && item.images.length > 0 && (
+                        <img
+                            src={item.images[0].url}
+                            alt="Problem Figure"
+                            className="max-h-80 rounded-xl border border-gray-200 dark:border-white/10 shadow-sm"
+                        />
+                    )}
+
                     {/* Problem Header */}
                     <div className="bg-white dark:bg-[#0f1523] p-6 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm">
                         <h3 className="text-sm font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-4 flex items-center gap-2">
