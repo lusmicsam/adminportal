@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, BookOpen, ChevronDown, ChevronRight, FileText, HelpCircle, Layout, Loader2, PlayCircle, Folder, AlertCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen, ChevronDown, ChevronRight, FileText, HelpCircle, Layout, Loader2, PlayCircle, Folder, AlertCircle, Maximize2, Minimize2 } from 'lucide-react';
 import { API_CONFIG } from '../utils/api';
 
 export default function CourseDetailView({ course, onBack }) {
@@ -201,10 +201,12 @@ export default function CourseDetailView({ course, onBack }) {
     const MainContentArea = ({ content }) => {
         const [currentIndex, setCurrentIndex] = useState(0);
         const [activePdfIndex, setActivePdfIndex] = useState(0);
+        const [pdfExpanded, setPdfExpanded] = useState(false);
 
         useEffect(() => {
             setCurrentIndex(0);
             setActivePdfIndex(0);
+            setPdfExpanded(false);
         }, [content]);
 
         if (!content) {
@@ -331,34 +333,106 @@ export default function CourseDetailView({ course, onBack }) {
             );
         };
 
-        const renderPDF = (item) => (
-            <div className="h-full flex flex-col">
-                {/* PDF Toggles */}
-                <div className="flex gap-2 mb-4 bg-slate-100 dark:bg-white/5 p-1 rounded-xl w-fit">
-                    {item.pdfs.map((pdf, idx) => (
-                        <button
-                            key={idx}
-                            onClick={() => setActivePdfIndex(idx)}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activePdfIndex === idx
-                                    ? 'bg-white dark:bg-[#0f1523] text-cyan-600 shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
-                                }`}
-                        >
-                            {pdf.label || `PDF ${idx + 1}`}
-                        </button>
-                    ))}
-                </div>
+        const renderPDF = (item) => {
+            const isExpanded = pdfExpanded;
 
-                {/* PDF Iframe */}
-                <div className="flex-1 bg-white dark:bg-[#0f1523] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden shadow-sm relative">
-                    <iframe
-                        src={item.pdfs[activePdfIndex].url}
-                        className="w-full h-full border-none"
-                        title="PDF Viewer"
-                    />
-                </div>
-            </div>
-        );
+            return (
+                <>
+                    {/* EXPANDED VIEW OVERLAY */}
+                    {isExpanded && (
+                        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+                            <div className="w-full h-full max-w-[95vw] max-h-[95vh] bg-white dark:bg-[#0f1523] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-white/10 relative animate-in zoom-in-95 duration-200">
+                                {/* Expanded Header */}
+                                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-black/20">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 rounded-lg">
+                                            <BookOpen className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900 dark:text-white">{item.title || 'Lecture Notes'}</h3>
+                                            <div className="flex gap-2 text-xs mt-0.5">
+                                                {item.pdfs.map((pdf, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => setActivePdfIndex(idx)}
+                                                        className={`px-2 py-0.5 rounded transition-colors ${activePdfIndex === idx
+                                                            ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-medium'
+                                                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                                            }`}
+                                                    >
+                                                        {pdf.label || `PDF ${idx + 1}`}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setPdfExpanded(false)}
+                                        className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg transition-colors text-gray-500 dark:text-gray-400"
+                                        title="Minimize View"
+                                    >
+                                        <Minimize2 className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                {/* Expanded Content */}
+                                <div className="flex-1 bg-gray-100 dark:bg-black/50 p-1 relative">
+                                    <iframe
+                                        src={item.pdfs[activePdfIndex].url}
+                                        className="w-full h-full rounded-xl bg-white dark:bg-[#1a202c]"
+                                        title="PDF Expanded Viewer"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* STANDARD VIEW */}
+                    <div className="h-full flex flex-col">
+                        <div className="flex items-center justify-between mb-4 bg-slate-100 dark:bg-white/5 p-1.5 rounded-xl">
+                            {/* PDF Toggles */}
+                            <div className="flex gap-2">
+                                {item.pdfs.map((pdf, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setActivePdfIndex(idx)}
+                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activePdfIndex === idx
+                                            ? 'bg-white dark:bg-[#0f1523] text-cyan-600 shadow-sm'
+                                            : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                                            }`}
+                                    >
+                                        {pdf.label || `PDF ${idx + 1}`}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Maximize Button */}
+                            <button
+                                onClick={() => setPdfExpanded(true)}
+                                className="p-2 hover:bg-white dark:hover:bg-[#0f1523] rounded-lg text-gray-500 dark:text-gray-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all shadow-sm"
+                                title="Maximize View"
+                            >
+                                <Maximize2 className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* PDF Iframe */}
+                        <div className="flex-1 bg-white dark:bg-[#0f1523] rounded-2xl border border-gray-200 dark:border-white/5 overflow-hidden shadow-sm relative group">
+                            <iframe
+                                src={item.pdfs[activePdfIndex].url}
+                                className="w-full h-full border-none"
+                                title="PDF Viewer"
+                            />
+                            {/* Hover Overlay Hint */}
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                <div className="bg-white/90 dark:bg-black/80 backdrop-blur text-xs font-bold px-3 py-1.5 rounded-full shadow-lg text-gray-700 dark:text-gray-300 flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                                    <Maximize2 className="w-3 h-3" /> Click maximize for better view
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            );
+        };
 
         return (
             <div className="h-full overflow-y-auto custom-scrollbar p-8">
