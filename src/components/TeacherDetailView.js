@@ -62,12 +62,15 @@ export default function TeacherDetailView({ teacher, onBack, onSectionSelect, ca
                                 const compData = await compRes.json();
 
                                 if (compData.success && compData.data) {
-                                    const val = compData.data.overall_section_completion || compData.data.completion || 0;
+                                    // Use section_overall_completion from the API response
+                                    const val = compData.data.section_overall_completion || 0;
 
                                     // Update Cache via prop
                                     if (onUpdateCache) {
                                         onUpdateCache(sectionName, course.course_id, val);
                                     }
+
+                                    console.log(`Cached ${sectionName} - ${course.course_name}: ${val}%`);
                                 }
                             } catch (e) {
                                 console.error(`Failed to fetch completion for ${sectionName} - ${course.course_id}`, e);

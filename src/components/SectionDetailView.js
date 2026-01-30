@@ -19,6 +19,12 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
     const [courseCompletions, setCourseCompletions] = useState(getInitialCompletions());
     const [examDataMap, setExamDataMap] = useState({});
 
+    // Progress Loading State
+    const [progressData, setProgressData] = useState({}); // { courseId: { studentName: progress } }
+    const [loadingProgress, setLoadingProgress] = useState(false);
+    const [progressLoaded, setProgressLoaded] = useState(false);
+    const [progressCount, setProgressCount] = useState({ current: 0, total: 0 });
+
     const sectionName = typeof section === 'string' ? section : section?.section_name || '';
     const userId = user?.university_id || user?.universityId || user?.id;
 
@@ -151,17 +157,21 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
         // Filter by Search Query
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(s =>
-                s.student_name.toLowerCase().includes(query) ||
-                s.uni_reg_id.toLowerCase().includes(query)
-            );
+            filtered = filtered.filter(s => {
+                const name = s.student_name || '';
+                const regId = s.uni_reg_id || '';
+                return name.toLowerCase().includes(query) || regId.toLowerCase().includes(query);
+            });
         }
 
         let sortable = [...filtered];
         if (sortConfig.key) {
             sortable.sort((a, b) => {
-                if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
-                if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+                const aVal = a[sortConfig.key] || '';
+                const bVal = b[sortConfig.key] || '';
+
+                if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
             });
         }
@@ -174,6 +184,66 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
             direction = 'desc';
         }
         setSortConfig({ key, direction });
+    };
+
+    // Load Progress using section-completion API
+    const handleLoadProgress = async () => {
+        if (!data || !regularCourses) return;
+        setLoadingProgress(true);
+        setProgressCount({ current: 0, total: regularCourses.length });
+
+        try {
+            const newProgressData = {};
+            const CONCURRENT_LIMIT = 5;
+            let processedCount = 0;
+
+            // Process courses in batches of 5
+            for (let i = 0; i < regularCourses.length; i += CONCURRENT_LIMIT) {
+                const batch = regularCourses.slice(i, i + CONCURRENT_LIMIT);
+
+                await Promise.all(batch.map(async (course) => {
+                    try {
+                        const token = getAdminToken();
+                        const headers = { 'Content-Type': 'application/json' };
+                        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                        const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionCompletion}`, {
+                            method: 'POST',
+                            headers,
+                            body: JSON.stringify({
+                                section_name: sectionName,
+                                course_id: course.course_id,
+                                university_id: userId
+                            }),
+                            credentials: 'include'
+                        });
+
+                        const json = await res.json();
+                        if (json.success && json.data && json.data.student_performance) {
+                            newProgressData[course.course_id] = {};
+                            json.data.student_performance.forEach(student => {
+                                if (student.student_name) {
+                                    newProgressData[course.course_id][student.student_name] = student.progress || 0;
+                                }
+                            });
+                        }
+                    } catch (err) {
+                        console.error(`Error loading progress for course ${course.course_id}`, err);
+                    }
+                }));
+
+                processedCount += batch.length;
+                setProgressCount({ current: processedCount, total: regularCourses.length });
+            }
+
+            setProgressData(newProgressData);
+            setProgressLoaded(true);
+        } catch (e) {
+            console.error("Progress loading failed:", e);
+            alert("Failed to load progress data. Please try again.");
+        } finally {
+            setLoadingProgress(false);
+        }
     };
 
     // --- EXPORT LOGIC ---
@@ -204,6 +274,15 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         'Reg ID': student.uni_reg_id,
                         'Section': section_metadata?.section_name || ''
                     };
+
+                    // Add loaded progress data if available
+                    if (progressLoaded) {
+                        regularCourses.forEach(course => {
+                            const courseProgress = progressData[course.course_id];
+                            const studentProgress = courseProgress?.[student.student_name] ?? 'N/A';
+                            row[`${course.course_name} - Progress (%)`] = studentProgress;
+                        });
+                    }
 
                     try {
                         // 1. LOOKUP (to get official student_id/uuid)
@@ -367,6 +446,14 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                 </div>
 
                 <div className="flex items-center gap-4">
+                    {loadingProgress && (
+                        <div className="flex flex-col items-end gap-1">
+                            <span className="text-xs font-medium text-purple-600 dark:text-purple-400">Loading... {progressCount.current}/{progressCount.total} courses</span>
+                            <div className="w-32 h-1 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                <div className="h-full bg-purple-500 transition-all duration-300" style={{ width: `${progressCount.total > 0 ? (progressCount.current / progressCount.total) * 100 : 0}%` }} />
+                            </div>
+                        </div>
+                    )}
                     {isExporting && (
                         <div className="flex flex-col items-end gap-1">
                             <span className="text-xs font-medium text-cyan-600 dark:text-cyan-400">Processing... {exportProgress}%</span>
@@ -376,8 +463,16 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         </div>
                     )}
                     <button
+                        onClick={handleLoadProgress}
+                        disabled={loadingProgress || isExporting}
+                        className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20"
+                    >
+                        {loadingProgress ? <CircularProgress percentage={0} size={20} strokeWidth={3} color="white" /> : <BookOpen className="w-4 h-4" />}
+                        {loadingProgress ? 'Loading...' : progressLoaded ? 'Reload Progress' : 'Load Progress'}
+                    </button>
+                    <button
                         onClick={handleExport}
-                        disabled={isExporting}
+                        disabled={isExporting || loadingProgress}
                         className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-500/20"
                     >
                         {isExporting ? <CircularProgress percentage={0} size={20} strokeWidth={3} color="white" /> : <TrendingUp className="w-4 h-4" />}
@@ -393,15 +488,51 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         <TrendingUp className="w-5 h-5 text-cyan-600 dark:text-cyan-400" /> Course Performance
                     </h3>
                     <div className="space-y-4">
-                        {regularCourses.map(course => (
-                            <div key={course.course_id} className="p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none relative overflow-hidden">
-                                <div className="relative z-10">
-                                    <div className="flex justify-between items-start">
-                                        <h4 className="font-bold text-gray-900 dark:text-white text-sm w-full">{course.course_name}</h4>
+                        {regularCourses.map(course => {
+                            // Calculate average course progress if loaded
+                            let avgProgress = null;
+                            let studentCount = 0;
+                            if (progressLoaded && progressData[course.course_id]) {
+                                const courseProgressData = progressData[course.course_id];
+                                const progressValues = Object.values(courseProgressData).filter(p => typeof p === 'number');
+                                if (progressValues.length > 0) {
+                                    const sum = progressValues.reduce((acc, val) => acc + val, 0);
+                                    avgProgress = Math.round(sum / progressValues.length);
+                                    studentCount = progressValues.length;
+                                }
+                            }
+
+                            return (
+                                <div key={course.course_id} className="p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none relative overflow-hidden">
+                                    <div className="relative z-10">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <h4 className="font-bold text-gray-900 dark:text-white text-sm w-full">{course.course_name}</h4>
+                                        </div>
+
+                                        {progressLoaded && avgProgress !== null ? (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">Average Progress</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <CircularProgress percentage={avgProgress} size={28} strokeWidth={3} />
+                                                        <span className="text-sm font-bold text-gray-900 dark:text-white">{avgProgress}%</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">Students</span>
+                                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{studentCount}</span>
+                                                </div>
+                                            </div>
+                                        ) : progressLoaded ? (
+                                            <div className="text-xs text-gray-400 italic">No progress data</div>
+                                        ) : (
+                                            <div className="text-xs text-gray-400 italic">Load progress to view stats</div>
+                                        )}
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
+
 
                         {/* EXAM COURSES (No Progress, Just Action) */}
                         {examCourses.map(course => (
@@ -448,6 +579,11 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                                         Student Name <ArrowUpDown className="w-3 h-3 inline ml-1 opacity-50" />
                                     </th>
                                     <th className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300">Reg ID</th>
+                                    {progressLoaded && regularCourses.map(course => (
+                                        <th key={course.course_id} className="p-4 text-sm font-semibold text-gray-500 dark:text-gray-300 text-center" title={course.course_name}>
+                                            {course.course_name.length > 15 ? course.course_name.substring(0, 12) + '...' : course.course_name}
+                                        </th>
+                                    ))}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 dark:divide-white/5">
@@ -459,6 +595,23 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                                             </div>
                                         </td>
                                         <td className="p-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{student.uni_reg_id}</td>
+                                        {progressLoaded && regularCourses.map(course => {
+                                            const courseProgress = progressData[course.course_id];
+                                            const studentProgress = courseProgress?.[student.student_name] ?? null;
+
+                                            return (
+                                                <td key={course.course_id} className="p-4 text-center">
+                                                    {studentProgress !== null ? (
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <CircularProgress percentage={studentProgress} size={32} strokeWidth={3} />
+                                                            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{studentProgress}%</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400">-</span>
+                                                    )}
+                                                </td>
+                                            );
+                                        })}
                                     </tr>
                                 ))}
                             </tbody>
