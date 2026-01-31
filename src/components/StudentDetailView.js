@@ -259,11 +259,29 @@ export default function StudentDetailView({ student, onBack }) {
                     // Let's assume API returns 200 with success:false if no data, based on user input.
 
                     if (!res.ok) {
-                        // If it's a real server error, we might want to stop
+                        try {
+                            const errText = await res.text();
+                            console.warn(`Attempt ${i} failed with status ${res.status}:`, errText);
+                        } catch (e) {
+                            console.warn(`Attempt ${i} failed with status ${res.status}`);
+                        }
                         break;
                     }
 
-                    const data = await res.json();
+                    let data;
+                    try {
+                        const text = await res.text();
+                        try {
+                            data = JSON.parse(text);
+                        } catch (e) {
+                            // If response is not JSON (e.g. "Internal Server Error"), treat as failure
+                            console.warn(`Attempt ${i} returned non-JSON response:`, text.substring(0, 100));
+                            break;
+                        }
+                    } catch (e) {
+                        console.warn(`Attempt ${i} failed to read response text`, e);
+                        break;
+                    }
 
                     if (!data.success) {
                         // Check message for "No data found" signal
@@ -296,7 +314,15 @@ export default function StudentDetailView({ student, onBack }) {
                         }
 
                         if (summaryItem) {
-                            allAttempts.push(summaryItem);
+                            // CHECK: If completion stats show 0 for both, skip adding
+                            const stats = summaryItem.completion_stats || {};
+                            const hasData = (stats.total_coding && stats.total_coding > 0) ||
+                                (stats.total_mcq && stats.total_mcq > 0) ||
+                                (summaryItem.overview && summaryItem.overview.total_score > 0); // safe fallback
+
+                            if (hasData) {
+                                allAttempts.push(summaryItem);
+                            }
                         }
                     } else {
                         break; // No data or success:false without specific message
@@ -569,6 +595,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
             if (!res.ok) {
                 const errText = await res.text();
                 console.error("Attempt Details Fetch Error:", res.status, errText);
+                return; // Stop execution if request failed
             }
 
             const data = await res.json();
@@ -624,7 +651,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                         'Title': sub.question_title || 'Question',
                         'Description': sub.question_desc ? sub.question_desc.substring(0, 100) + '...' : '',
                         'Score': sub.score_obtained,
-                        // 'Max Score': resultType === 'coding' ? ((sub.test_cases?.length || 0) * 10) : 1,
+                        'Max Score': resultType === 'coding' ? ((sub.test_cases?.length || 0)) : 1,
                     };
 
                     if (resultType === 'mcq') {
