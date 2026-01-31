@@ -256,7 +256,7 @@ export default function StudentDetailView({ student, onBack }) {
 
                     // If request fails physically (500, 404, etc.), we likely stop unless it's just 'not found' which comes as 200 { success: false } usually?
                     // But if API returns 404 for no data, we catch it. 
-                    // Let's asume API returns 200 with success:false if no data, based on user input.
+                    // Let's assume API returns 200 with success:false if no data, based on user input.
 
                     if (!res.ok) {
                         try {
