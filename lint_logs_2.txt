@@ -1,0 +1,54 @@
+
+> admin-platform@0.1.0 lint
+> eslint
+
+
+D:\summer dev\AdminPortal\src\app\admin\dashboard\page.js
+   80:8   warning  React Hook useEffect has missing dependencies: 'batches.length', 'courses.length', 'fetchBatches', 'fetchCourses', 'fetchSections', 'fetchTeachers', 'sections.length', and 'teachers.length'. Either include them or remove the dependency array                                        react-hooks/exhaustive-deps
+  442:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\summer dev\AdminPortal\src\app\admin\login\page.js
+   53:8   warning  React Hook useEffect has a missing dependency: 'loading'. Either include it or remove the dependency array                                                                                                                                                                               react-hooks/exhaustive-deps
+  174:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  237:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\summer dev\AdminPortal\src\components\CourseDetailView.js
+   47:22  warning  React Hook useEffect has a spread element in its dependency array. This means we can't statically verify whether you've passed the correct dependencies                                                                                                                                  react-hooks/exhaustive-deps
+  593:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  736:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\summer dev\AdminPortal\src\components\SectionDetailView.js
+  133:8  warning  React Hook useEffect has missing dependencies: 'courseCompletions', 'examDataMap', and 'onUpdateCache'. Either include them or remove the dependency array. If 'onUpdateCache' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+
+D:\summer dev\AdminPortal\src\components\StudentDetailView.js
+    69:8   warning  React Hook useEffect has missing dependencies: 'user?.id', 'user?.universityId', and 'user?.university_id'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+    75:8   warning  React Hook useEffect has missing dependencies: 'fetchHistory' and 'selectedCourse'. Either include them or remove the dependency array                          react-hooks/exhaustive-deps
+   920:96  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                 react/no-unescaped-entities
+  1003:94  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                 react/no-unescaped-entities
+
+D:\summer dev\AdminPortal\src\components\TeacherDetailView.js
+  10:5  error    React Hook "useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render                                                                                                                             react-hooks/rules-of-hooks
+  87:8  warning  React Hook useEffect has missing dependencies: 'cache' and 'onUpdateCache'. Either include them or remove the dependency array. If 'onUpdateCache' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+
+D:\summer dev\AdminPortal\src\context\AuthContext.js
+  86:8  warning  React Hook useEffect has a missing dependency: 'checkSession'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\summer dev\AdminPortal\src\context\ThemeContext.js
+  14:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  12 |         const savedTheme = localStorage.getItem('theme');
+  13 |         if (savedTheme) {
+> 14 |             setTheme(savedTheme);
+     |             ^^^^^^^^ Avoid calling setState() directly within an effect
+  15 |             document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+  16 |         } else {
+  17 |             // Default dark  react-hooks/set-state-in-effect
+
+Γ£û 17 problems (4 errors, 13 warnings)
+

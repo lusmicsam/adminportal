@@ -95,20 +95,17 @@ export default function BatchDetailView({ batch, onBack, onSectionSelect }) {
             <div className="absolute top-0 left-0 h-[400px] w-[400px] bg-purple-500/10 blur-[100px] pointer-events-none opacity-50 dark:opacity-100" />
 
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-white/5 bg-white/70 dark:bg-white/5 backdrop-blur-xl shrink-0">
+            <div className="relative flex items-center justify-between p-8 border-b border-gray-200 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shrink-0 shadow-lg">
                 <div className="flex items-center gap-6">
-                    <button onClick={onBack} className="p-2 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
-                        <ArrowLeft className="w-6 h-6" />
+                    <button onClick={onBack} className="group p-3 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-700 hover:from-purple-500 hover:to-pink-500 dark:hover:from-purple-600 dark:hover:to-pink-600 text-gray-700 dark:text-gray-300 hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/30 hover:scale-110">
+                        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                     </button>
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{batch.batch_name}</h2>
-                        <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">
-                            <span className="flex items-center gap-2">
+                        <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent mb-2">{batch.batch_name}</h2>
+                        <div className="flex gap-4 text-sm font-medium">
+                            <span className="flex items-center gap-2 px-3 py-1 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
                                 <Users className="w-4 h-4" />
                                 {batch.batch_student_strength || 0} Students
-                            </span>
-                            <span className="px-2 py-0.5 rounded bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/5 text-xs font-mono">
-                                {new Date(batch.created_at || Date.now()).toLocaleDateString()}
                             </span>
                         </div>
                     </div>
@@ -142,8 +139,7 @@ export default function BatchDetailView({ batch, onBack, onSectionSelect }) {
                             {courses.length > 0 ? (
                                 courses.map((course, i) => (
                                     <div key={i} className="p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm dark:shadow-none">
-                                        <div className="font-bold text-gray-900 dark:text-white text-sm mb-1">{course.course_name || course.course_title || 'Untitled Course'}</div>
-                                        <div className="text-xs text-gray-500 font-mono">{course.course_code || 'CODE-N/A'}</div>
+                                        <div className="font-bold text-gray-900 dark:text-white text-sm">{course.course_name || course.course_title || 'Untitled Course'}</div>
                                     </div>
                                 ))
                             ) : (

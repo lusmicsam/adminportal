@@ -65,6 +65,9 @@ export default function DeepDiveDashboard() {
     };
 
 
+
+
+
     // Initial Data Fetch
     useEffect(() => {
         if (!authLoading && user) {
@@ -165,13 +168,62 @@ export default function DeepDiveDashboard() {
         }
     };
 
+    // Live Filtering Effect
+    useEffect(() => {
+        const lowerQuery = searchQuery.toLowerCase().trim();
+
+        if (view === 'teachers') {
+            if (!lowerQuery) setTeachers(masterTeachers);
+            else {
+                const filtered = masterTeachers.filter(t =>
+                    (t.teacher_name && t.teacher_name.toLowerCase().includes(lowerQuery)) ||
+                    (t.uni_reg_id && String(t.uni_reg_id).toLowerCase().includes(lowerQuery)) ||
+                    (t.teacher_email && t.teacher_email.toLowerCase().includes(lowerQuery))
+                );
+                setTeachers(filtered);
+            }
+        } else if (view === 'sections') {
+            if (!lowerQuery) setSections(masterSections);
+            else {
+                const filtered = masterSections.filter(s =>
+                    String(s).toLowerCase().includes(lowerQuery)
+                );
+                setSections(filtered);
+            }
+        } else if (view === 'courses') {
+            if (!lowerQuery) setCourses(masterCourses);
+            else {
+                const filtered = masterCourses.filter(c =>
+                    (c.course_name && c.course_name.toLowerCase().includes(lowerQuery)) ||
+                    (c.course_code && c.course_code.toLowerCase().includes(lowerQuery))
+                );
+                setCourses(filtered);
+            }
+        }
+    }, [searchQuery, view, masterTeachers, masterSections, masterCourses]);
+
+    // --- Auth Loading Guard ---
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center">
+                <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+            </div>
+        );
+    }
+
+    if (!user) {
+        return null;
+    }
+
     const handleSearch = async (e) => {
         e.preventDefault();
 
+        // Only Students require server-side search on Submit
+        if (view !== 'students') return;
+
         // Handle Empty Search (Reset)
         if (!searchQuery.trim()) {
-            if (view === 'teachers') setTeachers(masterTeachers);
-            if (view === 'sections') setSections(masterSections);
+            setStudents([]);
             return;
         }
 
@@ -179,66 +231,44 @@ export default function DeepDiveDashboard() {
         setHasSearched(true);
 
         try {
-            if (view === 'students') {
-                const res = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.student.lookup}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: 'uni_reg_id',
-                        value: searchQuery,
-                        university_id: user.university_id || user.universityId || user.id
-                    }),
-                    credentials: 'include'
-                });
-                const data = await res.json();
-                const found = data.data || data;
+            const res = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.student.lookup}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'uni_reg_id',
+                    value: searchQuery,
+                    university_id: user.university_id || user.universityId || user.id
+                }),
+                credentials: 'include'
+            });
+            const data = await res.json();
+            const found = data.data || data;
 
-                // Normalization Helper
-                const normalizeStudent = (s) => {
-                    if (!s) return null;
-                    return {
-                        ...s,
-                        student_id: s.student_id || s.uuid || s._id,
-                        uni_reg_id: s.uni_reg_id || s.reg_id
-                    };
+            // Normalization Helper
+            const normalizeStudent = (s) => {
+                if (!s) return null;
+                return {
+                    ...s,
+                    student_id: s.student_id || s.uuid || s._id,
+                    uni_reg_id: s.uni_reg_id || s.reg_id
                 };
+            };
 
-                // Strict check: if no ID, it's not a valid student
-                if (Array.isArray(found)) {
-                    setStudents(found.map(normalizeStudent).filter(s => s && (s.uni_reg_id || s.student_id)));
-                } else if (found && (found.uni_reg_id || found.reg_id || found.student_id || found.uuid)) {
-                    setStudents([normalizeStudent(found)]);
-                } else {
-                    setStudents([]);
-                    setShowError(true);
-                }
-            } else if (view === 'teachers') {
-                // Client-side filtering for teachers
-                const lowerQuery = searchQuery.toLowerCase();
-                const filteredTeachers = masterTeachers.filter(t =>
-                    (t.teacher_name && t.teacher_name.toLowerCase().includes(lowerQuery)) ||
-                    (t.uni_reg_id && String(t.uni_reg_id).toLowerCase().includes(lowerQuery)) ||
-                    (t.teacher_email && t.teacher_email.toLowerCase().includes(lowerQuery))
-                );
-                setTeachers(filteredTeachers);
-            } else if (view === 'sections') {
-                // Client-side filtering for sections
-                const lowerQuery = searchQuery.toLowerCase();
-                const filteredSections = masterSections.filter(s =>
-                    String(s).toLowerCase().includes(lowerQuery)
-                );
-                setSections(filteredSections);
-            } else if (view === 'courses') {
-                // [NEW] Client-side filtering for courses
-                const lowerQuery = searchQuery.toLowerCase();
-                const filtered = masterCourses.filter(c =>
-                    (c.course_name && c.course_name.toLowerCase().includes(lowerQuery)) ||
-                    (c.course_code && c.course_code.toLowerCase().includes(lowerQuery))
-                );
-                setCourses(filtered);
+            // Strict check: if no ID, it's not a valid student
+            if (Array.isArray(found)) {
+                setStudents(found.map(normalizeStudent).filter(s => s && (s.uni_reg_id || s.student_id)));
+            } else if (found && (found.uni_reg_id || found.reg_id || found.student_id || found.uuid)) {
+                setStudents([normalizeStudent(found)]);
+            } else {
+                setStudents([]);
+                setShowError(true);
             }
-        } catch (e) { console.error("Search Error", e); }
-        finally { setLoading(false); }
+        } catch (e) {
+            console.error("Search Error", e);
+            setShowError(true);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSectionClick = (sectionName) => {
@@ -398,92 +428,168 @@ export default function DeepDiveDashboard() {
                     <div className="max-w-7xl mx-auto relative z-10 space-y-8">
 
                         {/* Header */}
-                        <div className="flex flex-col md:flex-row justify-between gap-6 glass-panel p-6 rounded-2xl">
-                            <div>
-                                <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-indigo-400">
-                                    Admin Control Center
-                                </h1>
-                                <p className="text-gray-500 dark:text-gray-300 mt-2 flex items-center gap-3 text-lg font-medium">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" />
-                                    {user.name || 'Administrator'}
-                                </p>
-                            </div>
-                            <div className="flex gap-3 items-center">
-                                <button
-                                    onClick={toggleTheme}
-                                    className="p-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:bg-gray-200 dark:hover:bg-white/10 transition text-gray-500 dark:text-gray-400"
-                                >
-                                    {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                                </button>
+                        <div className="glass-panel p-8 rounded-3xl shadow-xl border border-white/10">
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                                {/* Branding Section */}
+                                <div className="flex items-center gap-6">
+                                    {/* Animated Logo */}
+                                    <div className="relative w-16 h-16 flex-shrink-0">
+                                        {/* Rotating Glow */}
+                                        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-full opacity-20 blur-xl animate-spin-slow" />
 
-                                <button
-                                    onClick={() => setIsPasswordModalOpen(true)}
-                                    className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 border border-transparent transition-all font-medium text-sm flex items-center gap-2"
-                                    title="Change Password"
-                                >
-                                    <Key className="w-4 h-4" /> <span className="hidden sm:inline">Change Password</span>
-                                </button>
+                                        {/* Logo */}
+                                        <div className="relative w-full h-full animate-float">
+                                            <img
+                                                src="/logo.png"
+                                                alt="TheEduCode"
+                                                className="w-full h-full object-contain drop-shadow-2xl"
+                                            />
+                                        </div>
+                                    </div>
 
-                                <button onClick={() => {
-                                    localStorage.clear();
-                                    document.cookie.split(";").forEach((c) => {
-                                        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-                                    });
-                                    logout();
-                                }} className="px-6 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-300 border border-red-500/20 hover:bg-red-500/20 transition flex items-center gap-2">
-                                    <LogOut className="w-4 h-4" />
-                                    Logout
-                                </button>
+                                    {/* Title & Status */}
+                                    <div>
+                                        <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+                                            TheEduCode
+                                        </h1>
+                                        <p className="text-gray-600 dark:text-gray-300 mt-1 flex items-center gap-2.5 text-base font-medium">
+                                            <span className="relative flex h-3 w-3">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 shadow-lg shadow-emerald-500/50"></span>
+                                            </span>
+                                            {user.name || 'Administrator'} • Admin Portal
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex gap-3 items-center">
+                                    {/* Theme Toggle */}
+                                    <button
+                                        onClick={toggleTheme}
+                                        className="group p-3 rounded-xl bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 shadow-sm hover:shadow-md hover:shadow-blue-500/20"
+                                        title="Toggle Theme"
+                                    >
+                                        {theme === 'dark' ?
+                                            <Sun className="w-5 h-5 text-amber-500 group-hover:rotate-90 transition-transform duration-300" /> :
+                                            <Moon className="w-5 h-5 text-indigo-600 group-hover:-rotate-12 transition-transform duration-300" />
+                                        }
+                                    </button>
+
+                                    {/* Change Password */}
+                                    <button
+                                        onClick={() => setIsPasswordModalOpen(true)}
+                                        className="group px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 border border-gray-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 font-medium text-sm flex items-center gap-2 shadow-sm hover:shadow-md hover:shadow-blue-500/10"
+                                        title="Change Password"
+                                    >
+                                        <Key className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                                        <span className="hidden sm:inline">Password</span>
+                                    </button>
+
+                                    {/* Logout */}
+                                    <button
+                                        onClick={() => {
+                                            localStorage.clear();
+                                            document.cookie.split(";").forEach((c) => {
+                                                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                                            });
+                                            logout();
+                                        }}
+                                        className="group px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-pink-600 text-white border border-red-600/20 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 flex items-center gap-2 font-medium"
+                                    >
+                                        <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                                        <span className="hidden sm:inline">Logout</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         {/* Main Navigation */}
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             {[
-                                { id: 'batches', label: 'Batches', icon: LayoutGrid, color: 'purple' },
-                                { id: 'sections', label: 'Sections', icon: Layers, color: 'emerald' },
-                                { id: 'teachers', label: 'Teachers', icon: Users, color: 'cyan' },
-                                { id: 'students', label: 'Students', icon: GraduationCap, color: 'blue' },
-                                { id: 'courses', label: 'Courses', icon: BookOpen, color: 'orange' }, // [NEW]
+                                { id: 'batches', label: 'Batches', icon: LayoutGrid, color: 'purple', gradient: 'from-purple-500 to-pink-500', count: batches.length },
+                                { id: 'sections', label: 'Sections', icon: Layers, color: 'emerald', gradient: 'from-emerald-500 to-teal-500', count: sections.length },
+                                { id: 'teachers', label: 'Teachers', icon: Users, color: 'cyan', gradient: 'from-cyan-500 to-blue-500', count: teachers.length },
+                                { id: 'students', label: 'Students', icon: GraduationCap, color: 'blue', gradient: 'from-blue-500 to-indigo-500', count: students.length },
+                                { id: 'courses', label: 'Courses', icon: BookOpen, color: 'orange', gradient: 'from-orange-500 to-amber-500', count: courses.length },
                             ].map(item => (
                                 <button
                                     key={item.id}
                                     onClick={() => { setView(item.id); setSearchQuery(''); }}
-                                    className={`p-5 rounded-2xl border transition-all duration-300 text-left relative overflow-hidden group
+                                    className={`group relative p-6 rounded-2xl border transition-all duration-300 text-left overflow-hidden transform hover:scale-105 hover:-translate-y-1
                                 ${view === item.id
-                                            ? `bg-white dark:bg-white/10 border-${item.color}-500 shadow-md ring-1 ring-${item.color}-500/50`
-                                            : 'bg-slate-100 dark:bg-white/5 border-slate-300 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/10 shadow-sm'
+                                            ? 'bg-gradient-to-br ' + item.gradient + ' text-white border-white/20 shadow-2xl shadow-' + item.color + '-500/30'
+                                            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-' + item.color + '-400 dark:hover:border-' + item.color + '-500 shadow-md hover:shadow-xl hover:shadow-' + item.color + '-500/20'
                                         }`}
                                 >
-                                    <div className={`w-12 h-12 rounded-xl mb-3 flex items-center justify-center transition-colors
-                                ${view === item.id ? `bg-${item.color}-50 text-${item.color}-600 dark:bg-${item.color}-500/20 dark:text-${item.color}-400` : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'}`}>
-                                        <item.icon className="w-6 h-6" />
+                                    {/* Background Glow Effect */}
+                                    {view !== item.id && (
+                                        <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
+                                    )}
+
+                                    {/* Icon Container */}
+                                    <div className={`relative w-14 h-14 rounded-xl mb-4 flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3
+                                ${view === item.id
+                                            ? 'bg-white/20 text-white shadow-lg'
+                                            : 'bg-gradient-to-br ' + item.gradient + ' text-white shadow-md'
+                                        }`}>
+                                        <item.icon className="w-7 h-7" />
                                     </div>
-                                    <span className={`block text-xl font-bold ${view === item.id ? `text-${item.color}-600 dark:text-${item.color}-400` : 'text-gray-900 dark:text-gray-200 group-hover:text-gray-900 dark:group-hover:text-white'}`}>
-                                        {item.label}
-                                    </span>
+
+                                    {/* Label & Count */}
+                                    <div className="relative">
+                                        <span className={`block text-lg font-bold mb-1 ${view === item.id ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                                            {item.label}
+                                        </span>
+                                        {item.count > 0 && (
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${view === item.id
+                                                ? 'bg-white/20 text-white'
+                                                : 'bg-gradient-to-r ' + item.gradient + ' text-white'
+                                                }`}>
+                                                {item.count} total
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Active Indicator */}
+                                    {view === item.id && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/50" />
+                                    )}
                                 </button>
                             ))}
                         </div>
 
                         {/* View Content */}
-                        <div className="glass-panel rounded-3xl p-6 md:p-8 min-h-[600px] shadow-2xl relative overflow-hidden">
-                            {/* Toolbar */}
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-white/5 pb-6">
-                                <h2 className="text-2xl font-bold capitalize flex items-center gap-2">
-                                    {view} <span className="text-sm font-normal text-gray-500 bg-white/5 px-2 py-0.5 rounded-full">
-                                        {view === 'teachers' && teachers.length}
-                                        {view === 'batches' && batches.length}
-                                        {view === 'sections' && sections.length}
-                                        {view === 'students' && students.length}
-                                        {view === 'courses' && courses.length}
-                                    </span>
-                                </h2>
+                        <div className="glass-panel rounded-3xl p-8 md:p-10 min-h-[600px] shadow-2xl relative overflow-hidden border border-white/10">
+                            {/* Decorative Elements */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl" />
+                            <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-cyan-500/10 to-indigo-500/10 rounded-full blur-3xl" />
 
-                                <div className="flex-1 flex justify-center px-4 md:px-12 w-full">
+                            {/* Toolbar */}
+                            <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 border-b border-white/10 pb-8">
+                                {/* Title Section */}
+                                <div className="flex items-center gap-4">
+                                    <h2 className="text-3xl font-bold capitalize bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+                                        {view}
+                                    </h2>
+                                    {view !== 'students' && (
+                                        <span className="px-4 py-1.5 rounded-full text-sm font-bold bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/30">
+                                            {view === 'teachers' && teachers.length}
+                                            {view === 'batches' && batches.length}
+                                            {view === 'sections' && sections.length}
+                                            {view === 'courses' && courses.length}
+                                            {' '}total
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Search Bar */}
+                                <div className="flex-1 flex justify-center w-full md:px-8">
                                     {(view === 'students' || view === 'teachers' || view === 'sections' || view === 'courses') && (
-                                        <form onSubmit={handleSearch} className="relative w-full max-w-2xl">
-                                            <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-500" />
+                                        <form onSubmit={handleSearch} className="relative w-full max-w-2xl group">
+                                            {/* Animated Search Icon */}
+                                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+
                                             <input
                                                 type="text"
                                                 placeholder={
@@ -494,17 +600,27 @@ export default function DeepDiveDashboard() {
                                                 }
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="w-full bg-slate-100 dark:bg-black/20 border border-slate-300 dark:border-white/10 rounded-xl pl-12 pr-4 py-3 text-base focus:border-cyan-500/50 outline-none transition-colors text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm"
+                                                className="w-full bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 rounded-2xl pl-14 pr-5 py-4 text-base font-medium focus:border-blue-500 dark:focus:border-blue-400 outline-none transition-all duration-300 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 shadow-md focus:shadow-xl focus:shadow-blue-500/20"
                                             />
+
+                                            {/* Clear Button */}
+                                            {searchQuery && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSearchQuery('')}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                                                >
+                                                    <span className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">✕</span>
+                                                </button>
+                                            )}
                                         </form>
                                     )}
-
                                 </div>
                             </div>
 
                             {/* View: Teachers */}
                             {view === 'teachers' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {loading ? (
                                         <>
                                             <TeacherSkeleton />
@@ -516,45 +632,72 @@ export default function DeepDiveDashboard() {
                                         </>
                                     ) : (
                                         teachers.map((t, idx) => (
-                                            <div key={idx} className="p-6 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/5 flex flex-col justify-between h-full hover:border-cyan-500/30 transition-all group shadow-sm dark:shadow-none">
-                                                <div>
+                                            <div key={idx} className="group relative p-6 rounded-2xl bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 flex flex-col justify-between h-full hover:border-cyan-400 dark:hover:border-cyan-500 hover:transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-cyan-500/20 overflow-hidden">
+                                                {/* Background Gradient Glow */}
+                                                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 to-blue-500/0 group-hover:from-cyan-500/10 group-hover:to-blue-500/10 transition-all duration-300" />
+
+                                                <div className="relative">
+                                                    {/* Header with Avatar */}
                                                     <div className="flex items-center gap-4 mb-6">
-                                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center text-cyan-600 dark:text-cyan-400 font-bold shrink-0 text-xl shadow-lg border border-gray-100 dark:border-white/5">
-                                                            {t.teacher_name ? t.teacher_name[0] : 'T'}
-                                                        </div>
-                                                        <div className="overflow-hidden">
-                                                            <h3 className="font-bold text-lg truncate text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" title={t.teacher_name}>{t.teacher_name || 'Unknown'}</h3>
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate font-mono mt-1" title={t.teacher_email}>{t.teacher_email || 'No email'}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="space-y-3 mb-6 bg-gray-50 dark:bg-black/20 p-4 rounded-xl border border-gray-100 dark:border-white/5">
-                                                        <div className="text-sm text-gray-400 flex justify-between items-center">
-                                                            <span className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Reg ID</span>
-                                                            <span className="font-mono text-gray-700 dark:text-white">{t.uni_reg_id || 'N/A'}</span>
+    <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shrink-0 shadow-xl group-hover:scale-110 transition-transform duration-300 overflow-hidden">
+        <div className="absolute inset-0 bg-white/10 rounded-2xl" />
+        <span className="relative z-10 text-white font-bold text-2xl">
+            {t.teacher_name 
+                ? t.teacher_name
+                    .split(' ')
+                    .map(word => word[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase()
+                : 'T'}
+        </span>
+    </div>
+    <div className="overflow-hidden flex-1">
+        <h3 className="font-bold text-lg truncate text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" title={t.teacher_name}>
+            {t.teacher_name || 'Unknown'}
+        </h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400 truncate font-mono mt-0.5" title={t.teacher_email}>
+            {t.teacher_email || 'No email'}
+        </p>
+    </div>
+</div>
+                                                    
+
+                                                    {/* Info Panel */}
+                                                    <div className="space-y-4 mb-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900/50 dark:to-slate-900/30 p-5 rounded-xl border border-gray-200 dark:border-slate-700">
+                                                        {/* Reg ID */}
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase tracking-wider">Reg ID</span>
+                                                            <span className="font-mono text-sm font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                                                                {t.uni_reg_id || 'N/A'}
+                                                            </span>
                                                         </div>
 
                                                         {/* Assigned Sections */}
                                                         <div>
-                                                            <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Sections</div>
-                                                            <div className="flex flex-wrap gap-1.5">
+                                                            <div className="text-gray-500 dark:text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2.5">Sections</div>
+                                                            <div className="flex flex-wrap gap-2">
                                                                 {t.assigned_section && Array.isArray(t.assigned_section) && t.assigned_section.length > 0 ? (
                                                                     t.assigned_section.map((sec, i) => (
-                                                                        <span key={i} className="px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-300 font-medium">
+                                                                        <span key={i} className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold shadow-md hover:shadow-lg transition-shadow">
                                                                             {sec}
                                                                         </span>
                                                                     ))
                                                                 ) : (
-                                                                    <span className="text-xs text-gray-600 italic">No sections</span>
+                                                                    <span className="text-xs text-gray-400 dark:text-gray-500 italic">No sections assigned</span>
                                                                 )}
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
 
+                                                {/* View Button */}
                                                 <button
                                                     onClick={() => setInspectingTeacher(t)}
-                                                    className="w-full py-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 text-sm font-medium border border-cyan-500/20 hover:bg-cyan-500/20 mt-auto transition-all flex items-center justify-center gap-2">
-                                                    View Details <ChevronRight className="w-4 h-4" />
+                                                    className="relative w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-cyan-500/40 flex items-center justify-center gap-2 group/btn"
+                                                >
+                                                    View Details
+                                                    <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                                                 </button>
                                             </div>
                                         ))
@@ -570,7 +713,7 @@ export default function DeepDiveDashboard() {
 
                             {/* View: Batches */}
                             {view === 'batches' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {loading ? (
                                         <>
                                             <BatchSkeleton />
@@ -583,60 +726,82 @@ export default function DeepDiveDashboard() {
                                     ) : (
                                         batches.map((batch) => {
                                             const status = getBatchStatus(batch.ending_date);
+                                            const isActive = status.label === 'Active';
                                             return (
-                                                (
-                                                    <button
-                                                        key={batch.batch_id}
-                                                        onClick={() => handleBatchClick(batch)}
-                                                        className="text-left w-full h-full glass-panel p-5 rounded-2xl border border-slate-300 dark:border-white/5 hover:border-purple-500/30 hover:bg-purple-50 dark:hover:bg-purple-500/5 transition-all group relative overflow-hidden bg-slate-100 dark:bg-transparent shadow-sm dark:shadow-none"
-                                                    >
-                                                        {/* Decor */}
-                                                        <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-bl-[80px] transition-all group-hover:bg-purple-500/10 pointer-events-none" />
+                                                <button
+                                                    key={batch.batch_id}
+                                                    onClick={() => handleBatchClick(batch)}
+                                                    className="group relative text-left w-full p-6 rounded-2xl bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 hover:border-purple-400 dark:hover:border-purple-500 hover:transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-purple-500/20 overflow-hidden"
+                                                >
+                                                    {/* Background Gradient Glow */}
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-pink-500/0 group-hover:from-purple-500/10 group-hover:to-pink-500/10 transition-all duration-300" />
 
-                                                        <div className="flex justify-between items-start mb-4 relative z-10">
-                                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600/20 to-indigo-600/20 border border-purple-200 dark:border-purple-500/20 flex items-center justify-center shadow-lg mt-2 text-purple-600 dark:text-purple-400">
-                                                                <LayoutGrid className="w-6 h-6" />
+                                                    {/* Decorative Corner */}
+                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-bl-[100px] opacity-50 group-hover:opacity-100 transition-opacity" />
+
+                                                    <div className="relative">
+                                                        {/* Header with Icon and Status */}
+                                                        <div className="flex justify-between items-start mb-5">
+                                                            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
+                                                                <LayoutGrid className="w-7 h-7" />
                                                             </div>
-                                                            <span className={`absolute top-0 right-0 m-4 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border ${status.color}`}>
+                                                            <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-md ${isActive
+                                                                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
+                                                                : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
+                                                                }`}>
                                                                 {status.label}
                                                             </span>
                                                         </div>
 
-                                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" title={batch.batch_name}>
+                                                        {/* Batch Name */}
+                                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" title={batch.batch_name}>
                                                             {batch.batch_name}
                                                         </h3>
 
                                                         {/* Stats Grid */}
-                                                        <div className="grid grid-cols-2 gap-2 my-4">
-                                                            <div className="bg-black/20 p-2 rounded-lg text-center">
-                                                                <div className="text-lg font-bold text-white">{batch.batch_student_strength}</div>
-                                                                <div className="text-[10px] text-gray-500 uppercase">Students</div>
+                                                        <div className="grid grid-cols-2 gap-3 mb-5">
+                                                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800/30 text-center">
+                                                                <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                                                    {batch.batch_student_strength}
+                                                                </div>
+                                                                <div className="text-[10px] text-gray-600 dark:text-gray-400 uppercase font-semibold mt-1">Students</div>
                                                             </div>
-                                                            <div className="bg-black/20 p-2 rounded-lg text-center">
-                                                                <div className="text-lg font-bold text-white">{batch.registered_courses_id?.length || 0}</div>
-                                                                <div className="text-[10px] text-gray-500 uppercase">Courses</div>
+                                                            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-xl border border-purple-200 dark:border-purple-800/30 text-center">
+                                                                <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                                                    {batch.registered_courses_id?.length || 0}
+                                                                </div>
+                                                                <div className="text-[10px] text-gray-600 dark:text-gray-400 uppercase font-semibold mt-1">Courses</div>
                                                             </div>
                                                         </div>
 
-                                                        <div className="pt-3 mt-auto border-t border-white/5 flex items-center justify-between text-xs text-slate-500 font-mono pr-6">
-                                                            <span>{new Date(batch.starting_date).toLocaleDateString()}</span>
-                                                            <span className="text-gray-700">→</span>
-                                                            <span>{new Date(batch.ending_date).toLocaleDateString()}</span>
+                                                        {/* Date Range */}
+                                                        <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 font-medium pt-4 border-t border-gray-200 dark:border-slate-700">
+                                                            <span>{new Date(batch.starting_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                                            <span className="text-gray-400">→</span>
+                                                            <span>{new Date(batch.ending_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                                                         </div>
 
-                                                        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-purple-400">
-                                                            <ChevronRight className="w-5 h-5" />
+                                                        {/* Chevron */}
+                                                        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-purple-500">
+                                                            <ChevronRight className="w-6 h-6" />
                                                         </div>
-                                                    </button>
-                                                ));
+                                                    </div>
+                                                </button>
+                                            );
                                         })
+                                    )}
+                                    {!loading && batches.length === 0 && (
+                                        <div className="col-span-full text-center text-gray-500 dark:text-gray-400 py-20 flex flex-col items-center">
+                                            <LayoutGrid className="w-16 h-16 mb-4 opacity-20" />
+                                            <p className="text-lg font-medium">No batches found</p>
+                                        </div>
                                     )}
                                 </div>
                             )}
 
                             {/* View: Sections */}
                             {view === 'sections' && (
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div className="relative grid grid-cols-2 md:grid-cols-5 gap-4">
                                     {loading ? (
                                         <>
                                             <SectionSkeleton />
@@ -652,38 +817,79 @@ export default function DeepDiveDashboard() {
                                         </>
                                     ) : (
                                         sections.map((sec, idx) => (
-                                            <button key={idx} onClick={() => handleSectionClick(sec)} className="p-6 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 hover:border-emerald-300 dark:hover:border-emerald-500/30 transition-all text-center shadow-sm dark:shadow-none">
-                                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{sec}</h3>
-                                                <p className="text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Section</p>
+                                            <button
+                                                key={idx}
+                                                onClick={() => handleSectionClick(sec)}
+                                                className="group relative p-8 rounded-2xl bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-500 hover:transform hover:scale-110 hover:-translate-y-1 transition-all duration-300 text-center shadow-lg hover:shadow-2xl hover:shadow-emerald-500/20 overflow-hidden"
+                                            >
+                                                {/* Gradient Glow */}
+                                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 to-teal-500/0 group-hover:from-emerald-500/10 group-hover:to-teal-500/10 transition-all duration-300" />
+
+                                                <div className="relative">
+                                                    {/* Section Icon */}
+                                                    <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                                        <Layers className="w-6 h-6 text-white" />
+                                                    </div>
+
+                                                    {/* Section Name */}
+                                                    <h3 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
+                                                        {sec}
+                                                    </h3>
+                                                    <p className="text-xs uppercase tracking-widest text-gray-500 dark:text-gray-400 font-semibold">Section</p>
+                                                </div>
                                             </button>
                                         ))
+                                    )}
+                                    {!loading && sections.length === 0 && (
+                                        <div className="col-span-full text-center text-gray-500 dark:text-gray-400 py-20 flex flex-col items-center">
+                                            <Layers className="w-16 h-16 mb-4 opacity-20" />
+                                            <p className="text-lg font-medium">No sections found</p>
+                                        </div>
                                     )}
                                 </div>
                             )}
 
                             {/* View: Students */}
                             {view === 'students' && (
-                                <div className="space-y-4">
+                                <div className="relative space-y-4">
                                     {loading ? (
                                         <ListSkeleton />
                                     ) : (
                                         <>
                                             {students.length === 0 && (
-                                                <div className="text-center text-gray-500 py-10">
-                                                    {hasSearched ? 'No student found with that ID.' : 'Use search to find students by Uni Reg ID'}
+                                                <div className="text-center text-gray-500 dark:text-gray-400 py-20 flex flex-col items-center">
+                                                    <GraduationCap className="w-16 h-16 mb-4 opacity-20" />
+                                                    <p className="text-lg font-medium">
+                                                        {hasSearched ? 'No student found with that ID' : 'Use search to find students by Uni Reg ID'}
+                                                    </p>
                                                 </div>
                                             )}
                                             {students.map((student, idx) => (
-                                                <div key={idx} className="flex justify-between items-center p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/5 shadow-sm dark:shadow-none">
-                                                    <div>
-                                                        <h4 className="font-bold text-gray-900 dark:text-white">{student.student_name || student.name}</h4>
-                                                        <p className="text-sm text-gray-500 dark:text-gray-400">{student.uni_reg_id || student.reg_id}</p>
+                                                <div key={idx} className="group relative flex justify-between items-center p-6 rounded-2xl bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-blue-500/20 overflow-hidden">
+                                                    {/* Background Glow */}
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-indigo-500/0 group-hover:from-blue-500/5 group-hover:to-indigo-500/5 transition-all duration-300" />
+
+                                                    <div className="relative flex items-center gap-4">
+                                                        {/* Avatar */}
+                                                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                                                            {(student.student_name || student.name || 'S')[0].toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                                {student.student_name || student.name}
+                                                            </h4>
+                                                            <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+                                                                {student.uni_reg_id || student.reg_id}
+                                                            </p>
+                                                        </div>
                                                     </div>
+
                                                     <button
                                                         onClick={() => startStudentInspection(student)}
-                                                        className="px-4 py-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg border border-blue-500/20 hover:bg-blue-500/20 transition"
+                                                        className="relative px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-blue-500/40 flex items-center gap-2 group/btn"
                                                     >
-                                                        Deep Dive Result
+                                                        View Details
+                                                        <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
                                                     </button>
                                                 </div>
                                             ))}
@@ -694,7 +900,7 @@ export default function DeepDiveDashboard() {
 
                             {/* [NEW] View: Courses */}
                             {view === 'courses' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {loading ? (
                                         <>
                                             <BatchSkeleton />
@@ -707,30 +913,49 @@ export default function DeepDiveDashboard() {
                                             <button
                                                 key={idx}
                                                 onClick={() => setInspectingCourse(course)}
-                                                className="text-left w-full glass-panel p-5 rounded-2xl border border-slate-300 dark:border-white/5 hover:border-orange-500/30 hover:bg-orange-50 dark:hover:bg-orange-500/5 transition-all group relative overflow-hidden bg-slate-100 dark:bg-transparent shadow-sm dark:shadow-none"
+                                                className="group relative text-left w-full p-6 rounded-2xl bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 hover:border-orange-400 dark:hover:border-orange-500 hover:transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-orange-500/20 overflow-hidden"
                                             >
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <div className="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center border border-orange-500/20">
-                                                        <BookOpen className="w-6 h-6" />
+                                                {/* Background Gradient Glow */}
+                                                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/0 to-amber-500/0 group-hover:from-orange-500/10 group-hover:to-amber-500/10 transition-all duration-300" />
+
+                                                {/* Decorative Corner */}
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-amber-500/10 rounded-bl-[100px] opacity-50 group-hover:opacity-100 transition-opacity" />
+
+                                                <div className="relative">
+                                                    {/* Header with Icon */}
+                                                    <div className="flex justify-between items-start mb-5">
+                                                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
+                                                            <BookOpen className="w-7 h-7" />
+                                                        </div>
                                                     </div>
-                                                </div>
 
-                                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1 line-clamp-1" title={course.course_name}>
-                                                    {course.course_name || 'Untitled Course'}
-                                                </h3>
+                                                    {/* Course Name */}
+                                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors min-h-[3.5rem]" title={course.course_name}>
+                                                        {course.course_name || 'Untitled Course'}
+                                                    </h3>
 
+                                                    {/* Course ID */}
+                                                    {/* {course.course_id && (
+                                                        <div className="mb-4 pb-4 border-b border-gray-200 dark:border-slate-700">
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase font-semibold mb-1">Course ID</p>
+                                                            <p className="font-mono text-sm font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">
+                                                                {course.course_id}
+                                                            </p>
+                                                        </div>
+                                                    )} */}
 
-                                                <div className="flex justify-between items-center text-xs text-slate-500 font-medium pt-3 border-t border-slate-200 dark:border-white/5">
-                                                    <span>Click to view content</span>
-                                                    <ChevronRight className="w-4 h-4 text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    {/* Chevron */}
+                                                    <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-orange-500">
+                                                        <ChevronRight className="w-6 h-6" />
+                                                    </div>
                                                 </div>
                                             </button>
                                         ))
                                     )}
                                     {!loading && courses.length === 0 && (
-                                        <div className="col-span-full text-center text-gray-500 py-20 flex flex-col items-center">
-                                            <BookOpen className="w-12 h-12 mb-4 opacity-20" />
-                                            No courses found.
+                                        <div className="col-span-full text-center text-gray-500 dark:text-gray-400 py-20 flex flex-col items-center">
+                                            <BookOpen className="w-16 h-16 mb-4 opacity-20" />
+                                            <p className="text-lg font-medium">No courses found</p>
                                         </div>
                                     )}
                                 </div>
