@@ -161,41 +161,7 @@ export default function AdminLoginPage() {
             <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px]" />
 
-            {/* Animated Logo at Top Center */}
-            <div className="absolute z-20 
-    /* Mobile: Top Left corner, no translation needed */
-    top-4 left-4 
-    
-    /* Desktop (md and up): Top-8, Center horizontally */
-    md:top-8 md:left-1/2 md:-translate-x-1/2"
-            >
-                <div className="relative">
-                    {/* 3D Rotating Logo */}
-                    {/* Added responsive sizing: smaller on mobile (w-16), larger on desktop (md:w-24) */}
-                    <div className="relative animate-float w-16 h-16 md:w-24 md:h-24">
-
-                        {/* Rotating Background Glow */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-full opacity-30 blur-2xl animate-spin-slow" />
-
-                        {/* Just the Logo with 3D Rotation */}
-                        <div className="relative w-full h-full animate-rotate-3d">
-                            <img
-                                src="/logo.png"
-                                alt="TheEduCode"
-                                className="w-full h-full object-contain drop-shadow-2xl"
-                            />
-                        </div>
-
-                        {/* Orbiting Sparkles */}
-                        <div className="absolute -inset-2 animate-spin-slow">
-                            <div className="absolute top-0 left-1/2 w-2 h-2 bg-blue-500 rounded-full shadow-lg shadow-blue-500/50" />
-                        </div>
-                        <div className="absolute -inset-2 animate-spin-reverse">
-                            <div className="absolute bottom-0 right-1/2 w-2 h-2 bg-violet-500 rounded-full shadow-lg shadow-violet-500/50" />
-                        </div>
-                    </div>
-                </div>
-            </div>
+           
 
             {/* Left Side Floating Elements */}
             <div className="hidden lg:block absolute left-0 top-0 h-full w-64 pointer-events-none">
@@ -269,17 +235,47 @@ export default function AdminLoginPage() {
             {/* Login Card */}
             <div className="w-full max-w-md relative z-10">
                 {/* Branding */}
-                <div className="text-center mb-6 animate-fadeIn mt-20">
-                    <div className="space-y-1">
-                        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
-                            TheEduCode
-                        </h1>
-                        <p className="text-base font-semibold text-gray-700 dark:text-gray-300">
-                            University Admin Portal
-                        </p>
-                    </div>
+                {/* Branding with Animated Logo */}
+<div className="text-center mb-6 animate-fadeIn">
+    {/* Animated Logo - Now part of branding */}
+    <div className="flex justify-center mb-4">
+        <div className="relative">
+            {/* 3D Rotating Logo */}
+            <div className="relative animate-float w-16 h-16 md:w-20 md:h-20">
+                {/* Rotating Background Glow */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-full opacity-30 blur-2xl animate-spin-slow" />
+
+                {/* Just the Logo with 3D Rotation */}
+                <div className="relative w-full h-full animate-rotate-3d">
+                    <img
+                        src="/logo.png"
+                        alt="TheEduCode"
+                        className="w-full h-full object-contain drop-shadow-2xl"
+                    />
                 </div>
 
+                {/* Orbiting Sparkles */}
+                <div className="absolute -inset-2 animate-spin-slow">
+                    <div className="absolute top-0 left-1/2 w-2 h-2 bg-blue-500 rounded-full shadow-lg shadow-blue-500/50" />
+                </div>
+                <div className="absolute -inset-2 animate-spin-reverse">
+                    <div className="absolute bottom-0 right-1/2 w-2 h-2 bg-violet-500 rounded-full shadow-lg shadow-violet-500/50" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {/* Text */}
+    <div className="space-y-1">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
+            TheEduCode
+        </h1>
+        <p className="text-base font-semibold text-gray-700 dark:text-gray-300">
+            University Admin Portal
+        </p>
+    </div>
+</div>
+                
                 {/* Main Login Card - Compact */}
                 <div className="bg-white dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700/50 overflow-hidden animate-slideInRight">
                     {/* Card Header with Gradient - Compact */}
