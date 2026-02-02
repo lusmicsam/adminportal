@@ -162,32 +162,40 @@ export default function AdminLoginPage() {
             <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px]" />
 
             {/* Animated Logo at Top Center */}
-            <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20">
-                <div className="relative">
-                    {/* 3D Rotating Logo */}
-                    <div className="relative w-24 h-24 animate-float">
-                        {/* Rotating Background Glow */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-full opacity-30 blur-2xl animate-spin-slow" />
+            <div className="absolute z-20 
+    /* Mobile: Top Left corner, no translation needed */
+    top-4 left-4 
+    
+    /* Desktop (md and up): Top-8, Center horizontally */
+    md:top-8 md:left-1/2 md:-translate-x-1/2"
+>
+    <div className="relative">
+        {/* 3D Rotating Logo */}
+        {/* Added responsive sizing: smaller on mobile (w-16), larger on desktop (md:w-24) */}
+        <div className="relative animate-float w-16 h-16 md:w-24 md:h-24">
+            
+            {/* Rotating Background Glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-full opacity-30 blur-2xl animate-spin-slow" />
 
-                        {/* Just the Logo with 3D Rotation */}
-                        <div className="relative w-full h-full animate-rotate-3d">
-                            <img
-                                src="/logo.png"
-                                alt="TheEduCode"
-                                className="w-full h-full object-contain drop-shadow-2xl"
-                            />
-                        </div>
-
-                        {/* Orbiting Sparkles */}
-                        <div className="absolute -inset-2 animate-spin-slow">
-                            <div className="absolute top-0 left-1/2 w-2 h-2 bg-blue-500 rounded-full shadow-lg shadow-blue-500/50" />
-                        </div>
-                        <div className="absolute -inset-2 animate-spin-reverse">
-                            <div className="absolute bottom-0 right-1/2 w-2 h-2 bg-violet-500 rounded-full shadow-lg shadow-violet-500/50" />
-                        </div>
-                    </div>
-                </div>
+            {/* Just the Logo with 3D Rotation */}
+            <div className="relative w-full h-full animate-rotate-3d">
+                <img
+                    src="/logo.png"
+                    alt="TheEduCode"
+                    className="w-full h-full object-contain drop-shadow-2xl"
+                />
             </div>
+
+            {/* Orbiting Sparkles */}
+            <div className="absolute -inset-2 animate-spin-slow">
+                <div className="absolute top-0 left-1/2 w-2 h-2 bg-blue-500 rounded-full shadow-lg shadow-blue-500/50" />
+            </div>
+            <div className="absolute -inset-2 animate-spin-reverse">
+                <div className="absolute bottom-0 right-1/2 w-2 h-2 bg-violet-500 rounded-full shadow-lg shadow-violet-500/50" />
+            </div>
+        </div>
+    </div>
+</div>
 
             {/* Left Side Floating Elements */}
             <div className="hidden lg:block absolute left-0 top-0 h-full w-64 pointer-events-none">
@@ -225,7 +233,7 @@ export default function AdminLoginPage() {
 
             {/* Loading Animation */}
             {loading && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md ">
                     <div className="relative">
                         {/* Logo with Animations */}
                         <div className="relative w-32 h-32">
@@ -233,7 +241,7 @@ export default function AdminLoginPage() {
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-full opacity-30 blur-3xl animate-spin-slow" />
 
                             {/* Just the Logo with Pulsing Effect */}
-                            <div className="relative w-full h-full animate-pulse">
+                            <div className="relative w-full h-full animate-pulse ">
                                 <img
                                     src="/logo.png"
                                     alt="Loading"
