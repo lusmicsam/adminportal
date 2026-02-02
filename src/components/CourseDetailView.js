@@ -604,118 +604,194 @@ export default function CourseDetailView({ course, onBack }) {
     // ─────────────────────────────────────────────────────────────────────────
     // MCQ Renderer
     // ─────────────────────────────────────────────────────────────────────────
+    // const renderMCQ = (item) => {
+    //   const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+    //   return (
+    //     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+    //       {/* Question Image */}
+    //       {item.images?.[0] && (
+    //         <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-lg">
+    //           <img
+    //             src={item.images[0].url}
+    //             alt="Question figure"
+    //             className="w-full h-auto max-h-80 object-contain bg-white dark:bg-[#0f1523]"
+    //           />
+    //         </div>
+    //       )}
+
+    //       {/* Question Card */}
+    //       <div className="bg-white dark:bg-[#0f1523] rounded-2xl p-8 shadow-sm 
+    //                     border border-gray-100 dark:border-white/5 relative overflow-hidden">
+    //         {/* Decorative */}
+    //         <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl 
+    //                       from-violet-500/5 to-transparent rounded-bl-full -mr-10 -mt-10" />
+
+    //         <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white 
+    //                      leading-relaxed relative z-10 mb-8">
+    //           {displayTitle}
+    //         </h3>
+
+    //         <div className="space-y-3 relative z-10">
+    //           {item.options?.map((opt, idx) => {
+    //             const isCorrect = opt.isAnswer;
+    //             const isSelected = selectedAnswer === idx;
+    //             const showResult = showExplanation;
+
+    //             let optionClass = 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10';
+
+    //             if (showResult) {
+    //               if (isCorrect) {
+    //                 optionClass = 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/20';
+    //               } else if (isSelected && !isCorrect) {
+    //                 optionClass = 'bg-red-50 dark:bg-red-500/10 border-red-500';
+    //               }
+    //             } else if (isSelected) {
+    //               optionClass = 'bg-blue-50 dark:bg-blue-500/10 border-blue-500 ring-2 ring-blue-500/20';
+    //             }
+
+    //             return (
+    //               <button
+    //                 key={idx}
+    //                 onClick={() => {
+    //                   setSelectedAnswer(idx);
+    //                   if (!showExplanation) setShowExplanation(true);
+    //                 }}
+    //                 disabled={showExplanation}
+    //                 className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-300
+    //                           ${optionClass} ${!showExplanation ? 'hover:scale-[1.01] cursor-pointer' : ''}`}
+    //               >
+    //                 <div className="flex items-start gap-4">
+    //                   <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center 
+    //                                  text-sm font-bold transition-all
+    //                                  ${showResult && isCorrect
+    //                       ? 'bg-emerald-500 text-white'
+    //                       : showResult && isSelected
+    //                         ? 'bg-red-500 text-white'
+    //                         : isSelected
+    //                           ? 'bg-blue-500 text-white'
+    //                           : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400'
+    //                     }`}>
+    //                     {showResult && isCorrect ? (
+    //                       <CheckCircle className="w-5 h-5" />
+    //                     ) : showResult && isSelected ? (
+    //                       <X className="w-5 h-5" />
+    //                     ) : (
+    //                       letters[idx]
+    //                     )}
+    //                   </div>
+
+    //                   <span className={`flex-1 pt-1.5 font-medium
+    //                                   ${showResult && isCorrect
+    //                       ? 'text-emerald-900 dark:text-emerald-100'
+    //                       : 'text-gray-700 dark:text-gray-300'
+    //                     }`}>
+    //                     {opt.option}
+    //                   </span>
+    //                 </div>
+    //               </button>
+    //             );
+    //           })}
+    //         </div>
+
+    //         {/* Reset/Retry Button */}
+    //         {showExplanation && (
+    //           <div className="mt-6 flex justify-center">
+    //             <button
+    //               onClick={() => {
+    //                 setSelectedAnswer(null);
+    //                 setShowExplanation(false);
+    //               }}
+    //               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 
+    //                        dark:bg-white/10 text-gray-600 dark:text-gray-400 
+    //                        hover:bg-gray-200 dark:hover:bg-white/20 transition-colors text-sm font-medium"
+    //             >
+    //               <RotateCcw className="w-4 h-4" />
+    //               Try Again
+    //             </button>
+    //           </div>
+    //         )}
+    //       </div>
+    //     </div>
+    //   );
+    // };
     const renderMCQ = (item) => {
-      const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-      return (
-        <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-          {/* Question Image */}
-          {item.images?.[0] && (
-            <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-lg">
-              <img
-                src={item.images[0].url}
-                alt="Question figure"
-                className="w-full h-auto max-h-80 object-contain bg-white dark:bg-[#0f1523]"
-              />
-            </div>
-          )}
-
-          {/* Question Card */}
-          <div className="bg-white dark:bg-[#0f1523] rounded-2xl p-8 shadow-sm 
-                        border border-gray-100 dark:border-white/5 relative overflow-hidden">
-            {/* Decorative */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl 
-                          from-violet-500/5 to-transparent rounded-bl-full -mr-10 -mt-10" />
-
-            <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white 
-                         leading-relaxed relative z-10 mb-8">
-              {displayTitle}
-            </h3>
-
-            <div className="space-y-3 relative z-10">
-              {item.options?.map((opt, idx) => {
-                const isCorrect = opt.isAnswer;
-                const isSelected = selectedAnswer === idx;
-                const showResult = showExplanation;
-
-                let optionClass = 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10';
-
-                if (showResult) {
-                  if (isCorrect) {
-                    optionClass = 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/20';
-                  } else if (isSelected && !isCorrect) {
-                    optionClass = 'bg-red-50 dark:bg-red-500/10 border-red-500';
-                  }
-                } else if (isSelected) {
-                  optionClass = 'bg-blue-50 dark:bg-blue-500/10 border-blue-500 ring-2 ring-blue-500/20';
-                }
-
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setSelectedAnswer(idx);
-                      if (!showExplanation) setShowExplanation(true);
-                    }}
-                    disabled={showExplanation}
-                    className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-300
-                              ${optionClass} ${!showExplanation ? 'hover:scale-[1.01] cursor-pointer' : ''}`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center 
-                                     text-sm font-bold transition-all
-                                     ${showResult && isCorrect
-                          ? 'bg-emerald-500 text-white'
-                          : showResult && isSelected
-                            ? 'bg-red-500 text-white'
-                            : isSelected
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400'
-                        }`}>
-                        {showResult && isCorrect ? (
-                          <CheckCircle className="w-5 h-5" />
-                        ) : showResult && isSelected ? (
-                          <X className="w-5 h-5" />
-                        ) : (
-                          letters[idx]
-                        )}
-                      </div>
-
-                      <span className={`flex-1 pt-1.5 font-medium
-                                      ${showResult && isCorrect
-                          ? 'text-emerald-900 dark:text-emerald-100'
-                          : 'text-gray-700 dark:text-gray-300'
-                        }`}>
-                        {opt.option}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Reset/Retry Button */}
-            {showExplanation && (
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={() => {
-                    setSelectedAnswer(null);
-                    setShowExplanation(false);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 
-                           dark:bg-white/10 text-gray-600 dark:text-gray-400 
-                           hover:bg-gray-200 dark:hover:bg-white/20 transition-colors text-sm font-medium"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  Try Again
-                </button>
-              </div>
-            )}
-          </div>
+  return (
+    <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+      {/* Question Image */}
+      {item.images?.[0] && (
+        <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-lg">
+          <img
+            src={item.images[0].url}
+            alt="Question figure"
+            className="w-full h-auto max-h-80 object-contain bg-white dark:bg-[#0f1523]"
+          />
         </div>
-      );
-    };
+      )}
 
+      {/* Question Card */}
+      <div className="bg-white dark:bg-[#0f1523] rounded-2xl p-8 shadow-sm 
+                    border border-gray-100 dark:border-white/5 relative overflow-hidden">
+        {/* Decorative */}
+        <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl 
+                      from-violet-500/5 to-transparent rounded-bl-full -mr-10 -mt-10" />
+
+        <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white 
+                     leading-relaxed relative z-10 mb-8">
+          {displayTitle}
+        </h3>
+
+        <div className="space-y-3 relative z-10">
+          {item.options?.map((opt, idx) => {
+            const isCorrect = opt.isAnswer;
+
+            return (
+              <div
+                key={idx}
+                className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-300
+                          ${isCorrect 
+                            ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/20' 
+                            : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10'
+                          }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center 
+                                 text-sm font-bold transition-all
+                                 ${isCorrect
+                                   ? 'bg-emerald-500 text-white'
+                                   : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400'
+                                 }`}>
+                    {isCorrect ? (
+                      <CheckCircle className="w-5 h-5" />
+                    ) : (
+                      letters[idx]
+                    )}
+                  </div>
+
+                  <span className={`flex-1 pt-1.5 font-medium
+                                  ${isCorrect
+                                    ? 'text-emerald-900 dark:text-emerald-100'
+                                    : 'text-gray-700 dark:text-gray-300'
+                                  }`}>
+                    {opt.option}
+                  </span>
+
+                  {isCorrect && (
+                    <span className="px-2 py-1 rounded-md bg-emerald-500 text-white text-xs font-bold uppercase">
+                      Answer
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
     // ─────────────────────────────────────────────────────────────────────────
     // Coding Renderer
     // ─────────────────────────────────────────────────────────────────────────
