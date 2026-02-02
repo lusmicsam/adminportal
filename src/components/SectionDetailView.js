@@ -42,7 +42,7 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
     // Fetch Progress Function
     const fetchProgress = async (courses) => {
         if (!courses || courses.length === 0) return;
-        
+
         setLoadingProgress(true);
         setProgressCount({ current: 0, total: courses.length });
 
@@ -472,7 +472,7 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
         <div className="fixed inset-0 z-[60] flex flex-col bg-slate-50 dark:bg-[#0B0F19] animate-in fade-in slide-in-from-right duration-300 overflow-hidden font-sans">
             {/* Background Effects */}
             <div className="absolute top-0 right-0 h-[500px] w-[500px] bg-gradient-to-br from-cyan-500/10 to-blue-500/10 blur-[100px] pointer-events-none opacity-50 dark:opacity-100" />
-            <div className="absolute bottom-0 left-0 h-[500px] w-[500px] bg-gradient-to-tr from-purple-500/10 to-pink-500/10 blur-[100px] pointer-events-none opacity-30 dark:opacity-100" />
+            <div className="absolute bottom-0 left-0 h-[500px] w-[500px] bg-gradient-to-tr from-violet-500/10 to-purple-500/10 blur-[100px] pointer-events-none opacity-30 dark:opacity-100" />
 
             {/* Header */}
             <div className="relative flex items-center justify-between p-6 px-8 border-b border-gray-200 dark:border-white/5 bg-white/80 dark:bg-[#0B0F19]/80 backdrop-blur-xl shrink-0 z-20 transition-all duration-300">
@@ -505,7 +505,7 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                             )}
                             {/* Courses */}
                             <span className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-white/5 rounded-full border border-gray-200 dark:border-white/5 shadow-sm">
-                                <BookOpen className="w-3.5 h-3.5 text-purple-500" />
+                                <BookOpen className="w-3.5 h-3.5 text-violet-500" />
                                 {course_performance?.length || 0} Courses
                             </span>
                             {/* Progress Loading Indicator */}
@@ -598,17 +598,17 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         {/* EXAM COURSES */}
                         {examCourses.length > 0 && (
                             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-white/5">
-                                <h3 className="text-sm font-extrabold uppercase tracking-widest text-purple-500 dark:text-purple-400 mb-4 flex items-center gap-2">
+                                <h3 className="text-sm font-extrabold uppercase tracking-widest text-violet-500 dark:text-violet-400 mb-4 flex items-center gap-2">
                                     Examinations
                                 </h3>
                                 <div className="space-y-3">
                                     {examCourses.map(course => (
-                                        <div key={course.course_id} className="p-5 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 border border-purple-100 dark:border-purple-500/20 relative overflow-hidden group">
+                                        <div key={course.course_id} className="p-5 rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/10 dark:to-purple-900/10 border border-violet-100 dark:border-violet-500/20 relative overflow-hidden group">
                                             <div className="relative z-10">
                                                 <h4 className="font-bold text-gray-900 dark:text-white text-sm mb-3">{course.course_name}</h4>
                                                 <button
                                                     onClick={() => setInspectingTest(examDataMap[course.course_id])}
-                                                    className="w-full py-2.5 bg-white dark:bg-white/10 hover:bg-purple-50 dark:hover:bg-purple-500/20 text-purple-600 dark:text-purple-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm border border-purple-100 dark:border-purple-500/20 flex items-center justify-center gap-2"
+                                                    className="w-full py-2.5 bg-white dark:bg-white/10 hover:bg-violet-50 dark:hover:bg-violet-500/20 text-violet-600 dark:text-violet-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm border border-violet-100 dark:border-violet-500/20 flex items-center justify-center gap-2"
                                                 >
                                                     View Results <ArrowLeft className="w-3 h-3 rotate-180" />
                                                 </button>
@@ -625,7 +625,7 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                 <div className="flex-1 p-8 overflow-hidden flex flex-col bg-slate-50 dark:bg-[#0B0F19]">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                            <div className="p-2 bg-purple-100 dark:bg-purple-500/20 rounded-lg text-purple-600 dark:text-purple-400">
+                            <div className="p-2 bg-violet-100 dark:bg-violet-500/20 rounded-lg text-violet-600 dark:text-violet-400">
                                 <Users className="w-5 h-5" />
                             </div>
                             Student Performance
@@ -638,13 +638,13 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         </h3>
 
                         <div className="relative w-72 group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-hover:text-violet-500 transition-colors" />
                             <input
                                 type="text"
                                 placeholder="Search by name or Reg ID..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 text-sm text-gray-900 dark:text-white placeholder-gray-400 transition-all shadow-sm"
+                                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-sm text-gray-900 dark:text-white placeholder-gray-400 transition-all shadow-sm"
                             />
                             {searchQuery && (
                                 <button
@@ -717,7 +717,7 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                                                 <tr key={student.student_id || student.uni_reg_id} className="hover:bg-gray-50 dark:hover:bg-white/[0.02] transition-colors group">
                                                     <td className="p-4 px-5">
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${['bg-red-100 text-red-600', 'bg-blue-100 text-blue-600', 'bg-green-100 text-green-600', 'bg-yellow-100 text-yellow-600', 'bg-purple-100 text-purple-600'][idx % 5]}`}>
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${['bg-red-100 text-red-600', 'bg-blue-100 text-blue-600', 'bg-green-100 text-green-600', 'bg-yellow-100 text-yellow-600', 'bg-violet-100 text-violet-600'][idx % 5]}`}>
                                                                 {student.student_name?.[0]?.toUpperCase() || 'S'}
                                                             </div>
                                                             <div
@@ -891,11 +891,11 @@ function TestDetailOverlay({ test, students, sectionMetadata, onClose }) {
             {/* Header */}
             <div className="flex items-center justify-between p-6 px-8 border-b border-gray-200 dark:border-white/5 bg-white shadow-lg dark:bg-[#0f1523] shrink-0">
                 <div className="flex items-center gap-6">
-                    <button onClick={onClose} className="p-3 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/5 hover:border-purple-500/30 text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-all hover:scale-105 active:scale-95 shadow-sm">
+                    <button onClick={onClose} className="p-3 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/5 hover:border-violet-500/30 text-gray-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition-all hover:scale-105 active:scale-95 shadow-sm">
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <div className="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wider font-extrabold mb-1">Detailed Results</div>
+                        <div className="text-xs text-violet-600 dark:text-violet-400 uppercase tracking-wider font-extrabold mb-1">Detailed Results</div>
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1 flex items-center gap-3">
                             {test?.section_name || 'Exam Details'}
                             <span className="text-sm font-normal text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-md">{examStudents.length} Students</span>
@@ -905,7 +905,7 @@ function TestDetailOverlay({ test, students, sectionMetadata, onClose }) {
                 </div>
                 <button
                     onClick={handleExport}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-xl transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:-translate-y-0.5 active:translate-y-0"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white rounded-xl transition-all shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:-translate-y-0.5 active:translate-y-0"
                 >
                     <TrendingUp className="w-4 h-4" />
                     <span className="font-bold">Export Results</span>
@@ -931,7 +931,7 @@ function TestDetailOverlay({ test, students, sectionMetadata, onClose }) {
                                     const isRegistered = student.student_name && student.student_name.trim() !== '';
 
                                     return (
-                                        <tr key={student.uni_reg_id || i} className={`hover:bg-purple-50/50 dark:hover:bg-purple-500/5 transition-colors ${!isRegistered ? 'opacity-60' : ''}`}>
+                                        <tr key={student.uni_reg_id || i} className={`hover:bg-violet-50/50 dark:hover:bg-violet-500/5 transition-colors ${!isRegistered ? 'opacity-60' : ''}`}>
                                             <td className="p-5">
                                                 {isRegistered ? (
                                                     <span className="font-bold text-gray-900 dark:text-white">{student.student_name}</span>
@@ -968,9 +968,9 @@ function TestDetailOverlay({ test, students, sectionMetadata, onClose }) {
                                                         <span className="font-bold">{student.marks_breakdown?.coding_marks || 0}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="w-16 text-right text-purple-600 dark:text-purple-400 font-medium">MCQ</span>
+                                                        <span className="w-16 text-right text-violet-600 dark:text-violet-400 font-medium">MCQ</span>
                                                         <div className="h-1.5 w-24 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
-                                                            <div className="h-full bg-purple-500" style={{ width: '100%' }}></div>
+                                                            <div className="h-full bg-violet-500" style={{ width: '100%' }}></div>
                                                         </div>
                                                         <span className="font-bold">{student.marks_breakdown?.mcq_marks || 0}</span>
                                                     </div>

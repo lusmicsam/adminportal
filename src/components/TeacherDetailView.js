@@ -245,7 +245,7 @@ export default function TeacherDetailView({ teacher, onBack, onSectionSelect, ca
         <div className="fixed inset-0 z-50 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right duration-300 bg-gray-50 dark:bg-[#0B0F19]">
             {/* Background Effects */}
             <div className="fixed -top-40 -left-48 h-[38rem] w-[38rem] bg-cyan-500/10 blur-3xl rounded-full pointer-events-none opacity-50 dark:opacity-100" />
-            <div className="fixed -bottom-44 -right-40 h-[42rem] w-[42rem] bg-purple-500/10 blur-3xl rounded-full pointer-events-none opacity-50 dark:opacity-100" />
+            <div className="fixed -bottom-44 -right-40 h-[42rem] w-[42rem] bg-violet-500/10 blur-3xl rounded-full pointer-events-none opacity-50 dark:opacity-100" />
 
             {/* Header */}
             <div className="relative flex items-center gap-6 p-8 border-b border-gray-200 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky top-0 z-10 shadow-lg">
@@ -427,17 +427,16 @@ export default function TeacherDetailView({ teacher, onBack, onSectionSelect, ca
                                                         <div className="flex items-center gap-3">
                                                             <div className="text-right">
                                                                 <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Progress</div>
-                                                                <div className={`text-sm font-bold ${
-                                                                    progress > 75 ? 'text-emerald-600 dark:text-emerald-400' :
-                                                                    progress > 40 ? 'text-blue-600 dark:text-blue-400' :
-                                                                    'text-orange-600 dark:text-orange-400'
-                                                                }`}>{progress}%</div>
+                                                                <div className={`text-sm font-bold ${progress > 75 ? 'text-emerald-600 dark:text-emerald-400' :
+                                                                        progress > 40 ? 'text-blue-600 dark:text-blue-400' :
+                                                                            'text-orange-600 dark:text-orange-400'
+                                                                    }`}>{progress}%</div>
                                                             </div>
-                                                            <CircularProgress 
-                                                                percentage={progress} 
-                                                                size={32} 
-                                                                strokeWidth={3} 
-                                                                color={progress > 75 ? 'emerald' : progress > 40 ? 'blue' : 'orange'} 
+                                                            <CircularProgress
+                                                                percentage={progress}
+                                                                size={32}
+                                                                strokeWidth={3}
+                                                                color={progress > 75 ? 'emerald' : progress > 40 ? 'blue' : 'orange'}
                                                             />
                                                         </div>
                                                     ) : isLoading ? null : (
@@ -452,13 +451,12 @@ export default function TeacherDetailView({ teacher, onBack, onSectionSelect, ca
                                             {progress !== null && (
                                                 <div className="mt-4 pt-4 border-t border-gray-100 dark:border-white/5">
                                                     <div className="h-1.5 w-full bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
-                                                        <div 
-                                                            className={`h-full rounded-full transition-all duration-1000 ${
-                                                                progress > 75 ? 'bg-emerald-500' :
-                                                                progress > 40 ? 'bg-blue-500' :
-                                                                'bg-orange-500'
-                                                            }`} 
-                                                            style={{ width: `${progress}%` }} 
+                                                        <div
+                                                            className={`h-full rounded-full transition-all duration-1000 ${progress > 75 ? 'bg-emerald-500' :
+                                                                    progress > 40 ? 'bg-blue-500' :
+                                                                        'bg-orange-500'
+                                                                }`}
+                                                            style={{ width: `${progress}%` }}
                                                         />
                                                     </div>
                                                 </div>

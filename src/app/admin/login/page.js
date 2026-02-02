@@ -167,7 +167,7 @@ export default function AdminLoginPage() {
                     {/* 3D Rotating Logo */}
                     <div className="relative w-24 h-24 animate-float">
                         {/* Rotating Background Glow */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-full opacity-30 blur-2xl animate-spin-slow" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-full opacity-30 blur-2xl animate-spin-slow" />
 
                         {/* Just the Logo with 3D Rotation */}
                         <div className="relative w-full h-full animate-rotate-3d">
@@ -183,7 +183,7 @@ export default function AdminLoginPage() {
                             <div className="absolute top-0 left-1/2 w-2 h-2 bg-blue-500 rounded-full shadow-lg shadow-blue-500/50" />
                         </div>
                         <div className="absolute -inset-2 animate-spin-reverse">
-                            <div className="absolute bottom-0 right-1/2 w-2 h-2 bg-purple-500 rounded-full shadow-lg shadow-purple-500/50" />
+                            <div className="absolute bottom-0 right-1/2 w-2 h-2 bg-violet-500 rounded-full shadow-lg shadow-violet-500/50" />
                         </div>
                     </div>
                 </div>
@@ -195,30 +195,30 @@ export default function AdminLoginPage() {
                 <div className="absolute top-1/4 left-8 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-full blur-xl animate-float" style={{ animationDelay: '0s' }} />
 
                 {/* Floating Square */}
-                <div className="absolute top-1/2 left-16 w-20 h-20 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-2xl blur-lg animate-float-delayed" style={{ animationDelay: '1s' }} />
+                <div className="absolute top-1/2 left-16 w-20 h-20 bg-gradient-to-br from-indigo-500/10 to-violet-500/10 rounded-2xl blur-lg animate-float-delayed" style={{ animationDelay: '1s' }} />
 
                 {/* Floating Circle 2 */}
-                <div className="absolute bottom-1/4 left-12 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-full blur-lg animate-float" style={{ animationDelay: '2s' }} />
+                <div className="absolute bottom-1/4 left-12 w-24 h-24 bg-gradient-to-br from-violet-500/10 to-blue-500/10 rounded-full blur-lg animate-float" style={{ animationDelay: '2s' }} />
 
                 {/* Small Dots */}
                 <div className="absolute top-1/3 left-20 w-3 h-3 bg-blue-400/30 rounded-full animate-pulse" />
-                <div className="absolute top-2/3 left-24 w-2 h-2 bg-purple-400/30 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+                <div className="absolute top-2/3 left-24 w-2 h-2 bg-violet-400/30 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
                 <div className="absolute top-1/2 left-8 w-3 h-3 bg-indigo-400/30 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
             </div>
 
             {/* Right Side Floating Elements */}
             <div className="hidden lg:block absolute right-0 top-0 h-full w-64 pointer-events-none">
                 {/* Floating Circle 1 */}
-                <div className="absolute top-1/3 right-8 w-28 h-28 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 rounded-full blur-xl animate-float-delayed" style={{ animationDelay: '0.5s' }} />
+                <div className="absolute top-1/3 right-8 w-28 h-28 bg-gradient-to-br from-violet-500/10 to-indigo-500/10 rounded-full blur-xl animate-float-delayed" style={{ animationDelay: '0.5s' }} />
 
                 {/* Floating Triangle Effect (using gradient) */}
                 <div className="absolute top-2/3 right-16 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 rounded-2xl blur-lg animate-float" style={{ animationDelay: '1.5s' }} />
 
                 {/* Floating Circle 2 */}
-                <div className="absolute bottom-1/3 right-12 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-xl animate-float-delayed" style={{ animationDelay: '2.5s' }} />
+                <div className="absolute bottom-1/3 right-12 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-violet-500/10 rounded-full blur-xl animate-float-delayed" style={{ animationDelay: '2.5s' }} />
 
                 {/* Small Dots */}
-                <div className="absolute top-1/4 right-20 w-3 h-3 bg-purple-400/30 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
+                <div className="absolute top-1/4 right-20 w-3 h-3 bg-violet-400/30 rounded-full animate-pulse" style={{ animationDelay: '0.3s' }} />
                 <div className="absolute top-1/2 right-24 w-2 h-2 bg-blue-400/30 rounded-full animate-pulse" style={{ animationDelay: '0.8s' }} />
                 <div className="absolute bottom-1/3 right-10 w-3 h-3 bg-indigo-400/30 rounded-full animate-pulse" style={{ animationDelay: '1.3s' }} />
             </div>
@@ -230,7 +230,7 @@ export default function AdminLoginPage() {
                         {/* Logo with Animations */}
                         <div className="relative w-32 h-32">
                             {/* Rotating Background Glow */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-full opacity-30 blur-3xl animate-spin-slow" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-full opacity-30 blur-3xl animate-spin-slow" />
 
                             {/* Just the Logo with Pulsing Effect */}
                             <div className="relative w-full h-full animate-pulse">
@@ -246,7 +246,7 @@ export default function AdminLoginPage() {
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-500 rounded-full shadow-lg shadow-blue-500/50" />
                             </div>
                             <div className="absolute -inset-4 animate-spin-reverse">
-                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-purple-500 rounded-full shadow-lg shadow-purple-500/50" />
+                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-3 bg-violet-500 rounded-full shadow-lg shadow-violet-500/50" />
                             </div>
                         </div>
 
@@ -263,7 +263,7 @@ export default function AdminLoginPage() {
                 {/* Branding */}
                 <div className="text-center mb-6 animate-fadeIn">
                     <div className="space-y-1">
-                        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">
                             TheEduCode
                         </h1>
                         <p className="text-base font-semibold text-gray-700 dark:text-gray-300">
@@ -275,7 +275,7 @@ export default function AdminLoginPage() {
                 {/* Main Login Card - Compact */}
                 <div className="bg-white dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700/50 overflow-hidden animate-slideInRight">
                     {/* Card Header with Gradient - Compact */}
-                    <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 p-5 text-center overflow-hidden">
+                    <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 p-5 text-center overflow-hidden">
                         {/* Decorative Elements */}
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl" />
                         <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full blur-3xl" />
@@ -363,7 +363,7 @@ export default function AdminLoginPage() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-3 px-6 rounded-xl shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 disabled:shadow-none active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 group disabled:cursor-not-allowed mt-6"
+                                className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-3 px-6 rounded-xl shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 disabled:shadow-none active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 group disabled:cursor-not-allowed mt-6"
                             >
                                 {loading ? (
                                     <>
@@ -384,7 +384,7 @@ export default function AdminLoginPage() {
                 {/* Branding Footer - Compact */}
                 <div className="mt-4 text-center space-y-1">
                     <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                        Powered by <span className="font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">TheEduCode</span>
+                        Powered by <span className="font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">TheEduCode</span>
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-500">
                         © 2026 TheEduCode. All rights reserved.

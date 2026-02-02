@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { 
-  ArrowLeft, BookOpen, ChevronDown, ChevronRight, FileText, 
-  HelpCircle, Layout, Loader2, PlayCircle, AlertCircle, 
+import {
+  ArrowLeft, BookOpen, ChevronDown, ChevronRight, FileText,
+  HelpCircle, Layout, Loader2, PlayCircle, AlertCircle,
   Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Search,
   CheckCircle, Circle, RotateCcw, Copy, Check, ExternalLink,
   X, Clock, Zap, BookmarkPlus, ChevronUp, GripVertical
@@ -36,8 +36,8 @@ const useLocalStorage = (key, initialValue) => {
 const useKeyboardShortcut = (key, callback, deps = []) => {
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === key && !e.ctrlKey && !e.metaKey && 
-          !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+      if (e.key === key && !e.ctrlKey && !e.metaKey &&
+        !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
         e.preventDefault();
         callback();
       }
@@ -108,9 +108,9 @@ const ContentTypeBadge = ({ type, className = "" }) => {
     'video': { bg: 'bg-rose-100 dark:bg-rose-500/20', text: 'text-rose-700 dark:text-rose-300', label: 'Video' },
     'pdf': { bg: 'bg-amber-100 dark:bg-amber-500/20', text: 'text-amber-700 dark:text-amber-300', label: 'Notes' },
   };
-  
+
   const c = config[type] || config['mcq'];
-  
+
   return (
     <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${c.bg} ${c.text} ${className}`}>
       {c.label}
@@ -132,7 +132,7 @@ const SearchBar = ({ value, onChange, onClear }) => (
                  border border-transparent focus:border-blue-500/30 transition-all"
     />
     {value && (
-      <button 
+      <button
         onClick={onClear}
         className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-200 dark:hover:bg-white/10 rounded-full transition-colors"
       >
@@ -169,11 +169,10 @@ const CopyButton = ({ text, className = "" }) => {
   return (
     <button
       onClick={handleCopy}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-        copied 
-          ? 'bg-emerald-500 text-white' 
-          : 'bg-white/10 hover:bg-white/20 text-gray-300'
-      } ${className}`}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${copied
+        ? 'bg-emerald-500 text-white'
+        : 'bg-white/10 hover:bg-white/20 text-gray-300'
+        } ${className}`}
     >
       {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
       {copied ? 'Copied!' : 'Copy'}
@@ -190,21 +189,21 @@ export default function CourseDetailView({ course, onBack }) {
   const [structure, setStructure] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // UI State
   const [expandedUnits, setExpandedUnits] = useState({});
   const [expandedLectures, setExpandedLectures] = useState({});
   const [selectedContent, setSelectedContent] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Progress State (persisted)
-//   const [completedItems, setCompletedItems] = useLocalStorage(
-//     `course_progress_${course?.course_id}`,
-//     {}
-//   );
-const completedItems = {};
-const setCompletedItems = () => {};
+  //   const [completedItems, setCompletedItems] = useLocalStorage(
+  //     `course_progress_${course?.course_id}`,
+  //     {}
+  //   );
+  const completedItems = {};
+  const setCompletedItems = () => { };
   const [lastViewed, setLastViewed] = useLocalStorage(
     `course_last_${course?.course_id}`,
     null
@@ -216,7 +215,7 @@ const setCompletedItems = () => {};
   // ─────────────────────────────────────────────────────────────────────────────
   // DATA FETCHING
   // ─────────────────────────────────────────────────────────────────────────────
-  
+
   const fetchCourseContent = useCallback(async (forceRefresh = false) => {
     const cacheKey = `course_content_${course.course_id}`;
     const CACHE_DURATION = 5 * 60 * 1000;
@@ -250,12 +249,12 @@ const setCompletedItems = () => {};
           credentials: 'include'
         }
       );
-      
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
+
       const data = await res.json();
       let units = [];
-      
+
       if (Array.isArray(data)) units = data;
       else if (Array.isArray(data.data)) units = data.data;
       else if (data.units) units = data.units;
@@ -301,11 +300,11 @@ const setCompletedItems = () => {};
         ...q, id, type: 'mcq', parentTitle
       }));
       if (mcqs.length > 0) {
-        items.push({ 
-          type: 'mcq-group', 
-          title: 'Practice MCQs', 
-          count: mcqs.length, 
-          items: mcqs, 
+        items.push({
+          type: 'mcq-group',
+          title: 'Practice MCQs',
+          count: mcqs.length,
+          items: mcqs,
           parentTitle,
           id: `mcq-${parentTitle}`
         });
@@ -318,11 +317,11 @@ const setCompletedItems = () => {};
         ...q, id, type: 'coding', parentTitle
       }));
       if (coding.length > 0) {
-        items.push({ 
-          type: 'coding-group', 
-          title: 'Coding Challenges', 
-          count: coding.length, 
-          items: coding, 
+        items.push({
+          type: 'coding-group',
+          title: 'Coding Challenges',
+          count: coding.length,
+          items: coding,
           parentTitle,
           id: `coding-${parentTitle}`
         });
@@ -331,10 +330,10 @@ const setCompletedItems = () => {};
 
     // Video
     if (subItem.video_url) {
-      items.push({ 
-        type: 'video', 
-        title: 'Video Lecture', 
-        url: subItem.video_url, 
+      items.push({
+        type: 'video',
+        title: 'Video Lecture',
+        url: subItem.video_url,
         parentTitle,
         id: `video-${parentTitle}`
       });
@@ -343,26 +342,26 @@ const setCompletedItems = () => {};
     // PDFs
     const pdfs = [];
     if (subItem.sub_unit_pdf) pdfs.push({ label: 'Material 1', url: subItem.sub_unit_pdf });
-    
+
     Object.keys(subItem).forEach(key => {
       if (key.startsWith('sub_unit_pdf') && key !== 'sub_unit_pdf' && subItem[key]) {
         const num = key.match(/\d+$/)?.[0] || '';
         pdfs.push({ label: `Material ${num}`, url: subItem[key] });
       }
     });
-    
+
     if (subItem.pdf_material) {
       pdfs.push({ label: 'Additional PDF', url: subItem.pdf_material });
     }
 
     // Deduplicate
     const uniquePdfs = pdfs.filter((v, i, a) => a.findIndex(t => t.url === v.url) === i);
-    
+
     if (uniquePdfs.length > 0) {
-      items.push({ 
-        type: 'pdf', 
-        title: 'Lecture Notes', 
-        pdfs: uniquePdfs, 
+      items.push({
+        type: 'pdf',
+        title: 'Lecture Notes',
+        pdfs: uniquePdfs,
         parentTitle,
         id: `pdf-${parentTitle}`
       });
@@ -375,62 +374,62 @@ const setCompletedItems = () => {};
   // COMPUTED VALUES
   // ─────────────────────────────────────────────────────────────────────────────
 
-//   const { flattenedContent, stats } = useMemo(() => {
-//     if (!structure?.units) return { flattenedContent: [], stats: { total: 0, completed: 0 } };
+  //   const { flattenedContent, stats } = useMemo(() => {
+  //     if (!structure?.units) return { flattenedContent: [], stats: { total: 0, completed: 0 } };
 
-//     const items = [];
-//     let total = 0;
-//     let completed = 0;
+  //     const items = [];
+  //     let total = 0;
+  //     let completed = 0;
 
-//     structure.units.forEach((unit, uIdx) => {
-//       (unit.sub_units || unit.subunits || []).forEach((sub, sIdx) => {
-//         const contentItems = getContentItems(sub);
-//         contentItems.forEach(item => {
-//           items.push({
-//             ...item,
-//             unitIndex: uIdx,
-//             subIndex: sIdx,
-//             unitTitle: unit.unit_title || unit.title,
-//             searchText: `${unit.unit_title || ''} ${sub.title || ''} ${item.title || ''}`.toLowerCase()
-//           });
-//           total++;
-//           if (completedItems[item.id]) completed++;
-//         });
-//       });
-//     });
+  //     structure.units.forEach((unit, uIdx) => {
+  //       (unit.sub_units || unit.subunits || []).forEach((sub, sIdx) => {
+  //         const contentItems = getContentItems(sub);
+  //         contentItems.forEach(item => {
+  //           items.push({
+  //             ...item,
+  //             unitIndex: uIdx,
+  //             subIndex: sIdx,
+  //             unitTitle: unit.unit_title || unit.title,
+  //             searchText: `${unit.unit_title || ''} ${sub.title || ''} ${item.title || ''}`.toLowerCase()
+  //           });
+  //           total++;
+  //           if (completedItems[item.id]) completed++;
+  //         });
+  //       });
+  //     });
 
-//     return { flattenedContent: items, stats: { total, completed } };
-//   }, [structure, getContentItems, completedItems]);
+  //     return { flattenedContent: items, stats: { total, completed } };
+  //   }, [structure, getContentItems, completedItems]);
 
-const { flattenedContent, stats } = useMemo(() => {
-  if (!structure?.units) return { flattenedContent: [], stats: { total: 0, completed: 0 } };
+  const { flattenedContent, stats } = useMemo(() => {
+    if (!structure?.units) return { flattenedContent: [], stats: { total: 0, completed: 0 } };
 
-  const items = [];
-  let total = 0;
-  let completed = 0;
+    const items = [];
+    let total = 0;
+    let completed = 0;
 
-  structure.units.forEach((unit, uIdx) => {
-    (unit.sub_units || unit.subunits || []).forEach((sub, sIdx) => {
-      const contentItems = getContentItems(sub);
-      contentItems.forEach(item => {
-        items.push({
-          ...item,
-          unitIndex: uIdx,
-          subIndex: sIdx,
-          unitTitle: unit.unit_title || unit.title,
-          searchText: `${unit.unit_title || ''} ${sub.title || ''} ${item.title || ''}`.toLowerCase()
+    structure.units.forEach((unit, uIdx) => {
+      (unit.sub_units || unit.subunits || []).forEach((sub, sIdx) => {
+        const contentItems = getContentItems(sub);
+        contentItems.forEach(item => {
+          items.push({
+            ...item,
+            unitIndex: uIdx,
+            subIndex: sIdx,
+            unitTitle: unit.unit_title || unit.title,
+            searchText: `${unit.unit_title || ''} ${sub.title || ''} ${item.title || ''}`.toLowerCase()
+          });
+          total++;
+          // ✅ FIXED: Use logical OR to check if item is completed
+          if (completedItems[item.id] || item.is_completed) {
+            completed++;
+          }
         });
-        total++;
-        // ✅ FIXED: Use logical OR to check if item is completed
-        if (completedItems[item.id] || item.is_completed) {
-          completed++;
-        }
       });
     });
-  });
 
-  return { flattenedContent: items, stats: { total, completed } };
-}, [structure, getContentItems, completedItems]);
+    return { flattenedContent: items, stats: { total, completed } };
+  }, [structure, getContentItems, completedItems]);
 
 
   const filteredContent = useMemo(() => {
@@ -439,9 +438,9 @@ const { flattenedContent, stats } = useMemo(() => {
     return flattenedContent.filter(item => item.searchText.includes(query));
   }, [searchQuery, flattenedContent]);
 
-//   const progressPercent = stats.total > 0 
-//     ? Math.round((stats.completed / stats.total) * 100) 
-//     : 0;
+  //   const progressPercent = stats.total > 0 
+  //     ? Math.round((stats.completed / stats.total) * 100) 
+  //     : 0;
 
   // ─────────────────────────────────────────────────────────────────────────────
   // HANDLERS
@@ -461,23 +460,23 @@ const { flattenedContent, stats } = useMemo(() => {
   const selectContent = (content) => {
     setSelectedContent(content);
     setLastViewed(content?.id || null);
-    
+
     // Auto-close sidebar on mobile
     if (window.innerWidth < 1024) {
       setIsSidebarOpen(false);
     }
   };
 
-//   const markComplete = (itemId) => {
-//     setCompletedItems(prev => ({ ...prev, [itemId]: true }));
-//   };
+  //   const markComplete = (itemId) => {
+  //     setCompletedItems(prev => ({ ...prev, [itemId]: true }));
+  //   };
 
-//   const markIncomplete = (itemId) => {
-//     setCompletedItems(prev => {
-//       const { [itemId]: _, ...rest } = prev;
-//       return rest;
-//     });
-//   };
+  //   const markIncomplete = (itemId) => {
+  //     setCompletedItems(prev => {
+  //       const { [itemId]: _, ...rest } = prev;
+  //       return rest;
+  //     });
+  //   };
 
   // Keyboard shortcuts
   useKeyboardShortcut('Escape', () => {
@@ -492,53 +491,53 @@ const { flattenedContent, stats } = useMemo(() => {
   // ─────────────────────────────────────────────────────────────────────────────
 
   // REPLACE THE ENTIRE renderSidebarItem WITH THIS:
-const renderSidebarItem = (contentItem, idx) => {
-  const isSelected = selectedContent?.id === contentItem.id;
-  const type = contentItem.type;
+  const renderSidebarItem = (contentItem, idx) => {
+    const isSelected = selectedContent?.id === contentItem.id;
+    const type = contentItem.type;
 
-  const icons = {
-    'mcq': HelpCircle,
-    'mcq-group': HelpCircle,
-    'coding': FileText,
-    'coding-group': FileText,
-    'video': PlayCircle,
-    'pdf': BookOpen
-  };
-  const Icon = icons[type] || FileText;
+    const icons = {
+      'mcq': HelpCircle,
+      'mcq-group': HelpCircle,
+      'coding': FileText,
+      'coding-group': FileText,
+      'video': PlayCircle,
+      'pdf': BookOpen
+    };
+    const Icon = icons[type] || FileText;
 
-  return (
-    <button
-      key={contentItem.id || idx}
-      onClick={() => selectContent(contentItem)}
-      className={`group w-full text-left p-2.5 rounded-xl text-xs flex items-center gap-2.5 
+    return (
+      <button
+        key={contentItem.id || idx}
+        onClick={() => selectContent(contentItem)}
+        className={`group w-full text-left p-2.5 rounded-xl text-xs flex items-center gap-2.5 
                   transition-all duration-200 relative overflow-hidden
                   ${isSelected
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 scale-[1.02]'
-                    : 'hover:bg-gray-100 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
-                  }`}
-    >
-      <div className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all
+            ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25 scale-[1.02]'
+            : 'hover:bg-gray-100 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+          }`}
+      >
+        <div className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all
                       ${isSelected ? 'bg-white/20' : 'bg-gray-100 dark:bg-white/10'}`}>
-        <Icon className="w-3 h-3" />
-      </div>
+          <Icon className="w-3 h-3" />
+        </div>
 
-      <span className="flex-1 truncate font-medium">
-        {contentItem.title}
-      </span>
-
-      {contentItem.count && (
-        <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold tabular-nums
-                        ${isSelected ? 'bg-white/20' : 'bg-gray-200 dark:bg-white/10'}`}>
-          {contentItem.count}
+        <span className="flex-1 truncate font-medium">
+          {contentItem.title}
         </span>
-      )}
 
-      {isSelected && (
-        <ChevronRight className="w-3.5 h-3.5 animate-pulse" />
-      )}
-    </button>
-  );
-};
+        {contentItem.count && (
+          <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold tabular-nums
+                        ${isSelected ? 'bg-white/20' : 'bg-gray-200 dark:bg-white/10'}`}>
+            {contentItem.count}
+          </span>
+        )}
+
+        {isSelected && (
+          <ChevronRight className="w-3.5 h-3.5 animate-pulse" />
+        )}
+      </button>
+    );
+  };
 
   // ─────────────────────────────────────────────────────────────────────────────
   // MAIN CONTENT AREA
@@ -565,8 +564,8 @@ const renderSidebarItem = (contentItem, idx) => {
       return (
         <div className="h-full flex flex-col items-center justify-center text-gray-400 p-8">
           <div className="relative">
-            <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-purple-100 
-                          dark:from-blue-500/10 dark:to-purple-500/10 rounded-3xl 
+            <div className="w-32 h-32 bg-gradient-to-br from-blue-100 to-violet-100 
+                          dark:from-blue-500/10 dark:to-violet-500/10 rounded-3xl 
                           flex items-center justify-center mb-8 shadow-inner">
               <Layout className="w-12 h-12 text-gray-300 dark:text-gray-600" />
             </div>
@@ -575,14 +574,14 @@ const renderSidebarItem = (contentItem, idx) => {
               <Zap className="w-4 h-4 text-white" />
             </div>
           </div>
-          
+
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
             Ready to Learn?
           </h3>
           <p className="text-center text-gray-500 max-w-md mb-6">
             Select an item from the sidebar to view videos, practice problems, or read notes.
           </p>
-          
+
           <div className="flex flex-wrap gap-3 justify-center">
             <kbd className="px-3 py-1.5 bg-gray-100 dark:bg-white/10 rounded-lg text-xs font-mono">
               B
@@ -607,7 +606,7 @@ const renderSidebarItem = (contentItem, idx) => {
     // ─────────────────────────────────────────────────────────────────────────
     const renderMCQ = (item) => {
       const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
-      
+
       return (
         <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
           {/* Question Image */}
@@ -627,7 +626,7 @@ const renderSidebarItem = (contentItem, idx) => {
             {/* Decorative */}
             <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl 
                           from-violet-500/5 to-transparent rounded-bl-full -mr-10 -mt-10" />
-            
+
             <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white 
                          leading-relaxed relative z-10 mb-8">
               {displayTitle}
@@ -638,9 +637,9 @@ const renderSidebarItem = (contentItem, idx) => {
                 const isCorrect = opt.isAnswer;
                 const isSelected = selectedAnswer === idx;
                 const showResult = showExplanation;
-                
+
                 let optionClass = 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10';
-                
+
                 if (showResult) {
                   if (isCorrect) {
                     optionClass = 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/20';
@@ -665,14 +664,14 @@ const renderSidebarItem = (contentItem, idx) => {
                     <div className="flex items-start gap-4">
                       <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center 
                                      text-sm font-bold transition-all
-                                     ${showResult && isCorrect 
-                                       ? 'bg-emerald-500 text-white' 
-                                       : showResult && isSelected 
-                                         ? 'bg-red-500 text-white'
-                                         : isSelected 
-                                           ? 'bg-blue-500 text-white'
-                                           : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400'
-                                     }`}>
+                                     ${showResult && isCorrect
+                          ? 'bg-emerald-500 text-white'
+                          : showResult && isSelected
+                            ? 'bg-red-500 text-white'
+                            : isSelected
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400'
+                        }`}>
                         {showResult && isCorrect ? (
                           <CheckCircle className="w-5 h-5" />
                         ) : showResult && isSelected ? (
@@ -681,12 +680,12 @@ const renderSidebarItem = (contentItem, idx) => {
                           letters[idx]
                         )}
                       </div>
-                      
+
                       <span className={`flex-1 pt-1.5 font-medium
-                                      ${showResult && isCorrect 
-                                        ? 'text-emerald-900 dark:text-emerald-100' 
-                                        : 'text-gray-700 dark:text-gray-300'
-                                      }`}>
+                                      ${showResult && isCorrect
+                          ? 'text-emerald-900 dark:text-emerald-100'
+                          : 'text-gray-700 dark:text-gray-300'
+                        }`}>
                         {opt.option}
                       </span>
                     </div>
@@ -816,10 +815,10 @@ const renderSidebarItem = (contentItem, idx) => {
                                   border-b border-gray-100 dark:border-white/5 
                                   flex justify-between items-center">
                       <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded
-                                      ${tc.variant === 'sample' 
-                                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300' 
-                                        : 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300'
-                                      }`}>
+                                      ${tc.variant === 'sample'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+                          : 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300'
+                        }`}>
                         {tc.variant} #{i + 1}
                       </span>
                     </div>
@@ -851,108 +850,108 @@ const renderSidebarItem = (contentItem, idx) => {
     // ─────────────────────────────────────────────────────────────────────────
     // PDF Renderer
     // ─────────────────────────────────────────────────────────────────────────
-   const renderPDF = () => {
-  return (
-    <>
-      {/* Fullscreen Modal */}
-      {pdfExpanded && (
-        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl 
+    const renderPDF = () => {
+      return (
+        <>
+          {/* Fullscreen Modal */}
+          {pdfExpanded && (
+            <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl 
                       flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="w-full h-full bg-white dark:bg-[#0f1523] rounded-2xl 
+              <div className="w-full h-full bg-white dark:bg-[#0f1523] rounded-2xl 
                         shadow-2xl flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b 
+                <div className="flex items-center justify-between p-4 border-b 
                           border-gray-200 dark:border-white/5 bg-gray-50/50 dark:bg-black/20">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-amber-100 dark:bg-amber-500/20 
+                  <div className="flex items-center gap-4">
+                    <div className="p-2 bg-amber-100 dark:bg-amber-500/20 
                               text-amber-600 dark:text-amber-400 rounded-lg">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 dark:text-white">
-                    {content.title}
-                  </h3>
-                  <div className="flex gap-2 mt-1">
-                    {content.pdfs.map((pdf, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setActivePdfIndex(idx)}
-                        className={`px-2 py-0.5 rounded text-xs font-medium transition-all
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900 dark:text-white">
+                        {content.title}
+                      </h3>
+                      <div className="flex gap-2 mt-1">
+                        {content.pdfs.map((pdf, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setActivePdfIndex(idx)}
+                            className={`px-2 py-0.5 rounded text-xs font-medium transition-all
                                   ${activePdfIndex === idx
-                                    ? 'bg-amber-500 text-white'
-                                    : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400'
-                                  }`}
-                      >
-                        {pdf.label}
-                      </button>
-                    ))}
+                                ? 'bg-amber-500 text-white'
+                                : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400'
+                              }`}
+                          >
+                            {pdf.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setPdfExpanded(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 
+                         rounded-full transition-colors"
+                  >
+                    <Minimize2 className="w-6 h-6" />
+                  </button>
+                </div>
+                <div className="flex-1 bg-gray-100 dark:bg-black/20 p-2">
+                  <iframe
+                    src={content.pdfs[activePdfIndex].url}
+                    className="w-full h-full rounded-xl bg-white"
+                    title="PDF Viewer"
+                  />
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Inline View - FIXED HEIGHT */}
+          <div className="animate-in fade-in-50 duration-500">
+            {/* Controls */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex gap-2 flex-wrap">
+                {content.pdfs.map((pdf, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActivePdfIndex(idx)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all
+                          ${activePdfIndex === idx
+                        ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+                        : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
+                      }`}
+                  >
+                    {pdf.label}
+                  </button>
+                ))}
+              </div>
               <button
-                onClick={() => setPdfExpanded(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 
-                         rounded-full transition-colors"
+                onClick={() => setPdfExpanded(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white 
+                     dark:bg-white/5 text-gray-600 dark:text-gray-400 
+                     hover:bg-gray-100 dark:hover:bg-white/10 transition-all text-xs font-medium"
               >
-                <Minimize2 className="w-6 h-6" />
+                <Maximize2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Fullscreen</span>
               </button>
             </div>
-            <div className="flex-1 bg-gray-100 dark:bg-black/20 p-2">
+
+            {/* PDF Container - FIXED VIEWPORT HEIGHT */}
+            <div
+              className="bg-white dark:bg-[#0f1523] rounded-2xl border border-gray-200 dark:border-white/5 shadow-sm overflow-hidden"
+              style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}
+            >
               <iframe
                 src={content.pdfs[activePdfIndex].url}
-                className="w-full h-full rounded-xl bg-white"
+                className="w-full h-full border-0"
                 title="PDF Viewer"
+                style={{ height: '100%', width: '100%' }}
               />
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Inline View - FIXED HEIGHT */}
-      <div className="animate-in fade-in-50 duration-500">
-        {/* Controls */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex gap-2 flex-wrap">
-            {content.pdfs.map((pdf, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActivePdfIndex(idx)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all
-                          ${activePdfIndex === idx
-                            ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                            : 'bg-white dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
-                          }`}
-              >
-                {pdf.label}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => setPdfExpanded(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white 
-                     dark:bg-white/5 text-gray-600 dark:text-gray-400 
-                     hover:bg-gray-100 dark:hover:bg-white/10 transition-all text-xs font-medium"
-          >
-            <Maximize2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Fullscreen</span>
-          </button>
-        </div>
-
-        {/* PDF Container - FIXED VIEWPORT HEIGHT */}
-        <div 
-          className="bg-white dark:bg-[#0f1523] rounded-2xl border border-gray-200 dark:border-white/5 shadow-sm overflow-hidden"
-          style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}
-        >
-          <iframe
-            src={content.pdfs[activePdfIndex].url}
-            className="w-full h-full border-0"
-            title="PDF Viewer"
-            style={{ height: '100%', width: '100%' }}
-          />
-        </div>
-      </div>
-    </>
-  );
-};
+        </>
+      );
+    };
 
     // ─────────────────────────────────────────────────────────────────────────
     // Video Renderer
@@ -961,8 +960,8 @@ const renderSidebarItem = (contentItem, idx) => {
       <div className="flex flex-col items-center justify-center p-16 bg-white 
                     dark:bg-[#0f1523] rounded-3xl border border-gray-200 
                     dark:border-white/5 shadow-sm animate-in zoom-in-95 duration-500">
-        <div className="w-24 h-24 bg-gradient-to-br from-rose-100 to-pink-100 
-                      dark:from-rose-500/20 dark:to-pink-500/20 rounded-full 
+        <div className="w-24 h-24 bg-gradient-to-br from-rose-100 to-purple-100 
+                      dark:from-rose-500/20 dark:to-purple-500/20 rounded-full 
                       flex items-center justify-center mb-8 shadow-inner">
           <PlayCircle className="w-12 h-12 text-rose-500" />
         </div>
@@ -976,7 +975,7 @@ const renderSidebarItem = (contentItem, idx) => {
           href={content.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-8 py-3.5 rounded-full bg-gradient-to-r from-rose-500 to-pink-600 
+          className="px-8 py-3.5 rounded-full bg-gradient-to-r from-rose-500 to-purple-600 
                    text-white font-bold shadow-lg shadow-rose-500/30 
                    hover:shadow-xl hover:shadow-rose-500/40 hover:scale-105 
                    transition-all flex items-center gap-2"
@@ -1016,9 +1015,9 @@ const renderSidebarItem = (contentItem, idx) => {
                     className={`aspect-square rounded-lg text-xs font-bold transition-all 
                               flex items-center justify-center
                               ${currentIndex === i
-                                ? 'bg-blue-500 text-white shadow-lg ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-[#0f1523]'
-                                : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
-                              }`}
+                        ? 'bg-blue-500 text-white shadow-lg ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-[#0f1523]'
+                        : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
+                      }`}
                   >
                     {i + 1}
                   </button>
@@ -1050,7 +1049,7 @@ const renderSidebarItem = (contentItem, idx) => {
             </div>
 
             {/* Mark Complete Button */}
-           
+
           </div>
         </div>
       );
@@ -1119,15 +1118,15 @@ const renderSidebarItem = (contentItem, idx) => {
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-slate-50 dark:bg-[#0B0F19] 
                   animate-in fade-in slide-in-from-bottom-3 duration-300 overflow-hidden">
-      
+
       {/* ─────────────────────────────────────────────────────────────────────────
           HEADER
           ───────────────────────────────────────────────────────────────────────── */}
       <header className="flex items-center justify-between p-4 px-6 border-b 
                        border-gray-200 dark:border-white/5 bg-white dark:bg-[#0B0F19] shrink-0">
         <div className="flex items-center gap-4">
-          <button 
-            onClick={onBack} 
+          <button
+            onClick={onBack}
             className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-white/10 
                      rounded-xl transition-colors group"
           >
@@ -1168,9 +1167,9 @@ const renderSidebarItem = (contentItem, idx) => {
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all
                       ${!isSidebarOpen
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                        : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
-                      }`}
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
+              }`}
           >
             {isSidebarOpen ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
             <span className="hidden md:inline">{isSidebarOpen ? 'Focus Mode' : 'Show Sidebar'}</span>
@@ -1182,16 +1181,16 @@ const renderSidebarItem = (contentItem, idx) => {
           MAIN SPLIT VIEW
           ───────────────────────────────────────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
-        
+
         {/* Sidebar */}
         <aside className={`bg-white dark:bg-[#0f1523] border-r border-gray-200 
                         dark:border-white/5 flex flex-col overflow-hidden shrink-0 
                         transition-all duration-300 ease-out
-                        ${isSidebarOpen 
-                          ? 'w-[320px] lg:w-[360px] opacity-100' 
-                          : 'w-0 opacity-0 border-r-0'
-                        }`}>
-          
+                        ${isSidebarOpen
+            ? 'w-[320px] lg:w-[360px] opacity-100'
+            : 'w-0 opacity-0 border-r-0'
+          }`}>
+
           {/* Sidebar Header */}
           <div className="p-4 border-b border-gray-100 dark:border-white/5 space-y-4">
             <div className="flex items-center justify-between">
@@ -1202,8 +1201,8 @@ const renderSidebarItem = (contentItem, idx) => {
                 {stats.completed}/{stats.total} done
               </span> */}
             </div>
-            
-            <SearchBar 
+
+            <SearchBar
               value={searchQuery}
               onChange={setSearchQuery}
               onClear={() => setSearchQuery('')}
@@ -1257,9 +1256,9 @@ const renderSidebarItem = (contentItem, idx) => {
                       className={`w-full flex items-center justify-between p-3 rounded-xl 
                                 transition-all text-left group
                                 ${expandedUnits[uIdx]
-                                  ? 'bg-blue-50 dark:bg-blue-500/10 border-2 border-blue-200 dark:border-blue-500/30'
-                                  : 'hover:bg-gray-50 dark:hover:bg-white/5 border-2 border-transparent'
-                                }`}
+                          ? 'bg-blue-50 dark:bg-blue-500/10 border-2 border-blue-200 dark:border-blue-500/30'
+                          : 'hover:bg-gray-50 dark:hover:bg-white/5 border-2 border-transparent'
+                        }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="shrink-0 w-7 h-7 rounded-lg bg-gradient-to-br 
@@ -1271,8 +1270,8 @@ const renderSidebarItem = (contentItem, idx) => {
                           {unit.unit_title || unit.title || `Unit ${uIdx + 1}`}
                         </span>
                       </div>
-                      {expandedUnits[uIdx] 
-                        ? <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" /> 
+                      {expandedUnits[uIdx]
+                        ? <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
                         : <ChevronRight className="w-4 h-4 text-gray-400 shrink-0 opacity-0 group-hover:opacity-100" />
                       }
                     </button>
@@ -1292,12 +1291,12 @@ const renderSidebarItem = (contentItem, idx) => {
                                 className={`w-full text-left py-2.5 px-3 rounded-lg flex items-center 
                                           gap-2.5 transition-all
                                           ${expandedLectures[subKey]
-                                            ? 'bg-blue-100 dark:bg-blue-500/20 border-l-2 border-blue-500'
-                                            : 'hover:bg-gray-50 dark:hover:bg-white/5'
-                                          }`}
+                                    ? 'bg-blue-100 dark:bg-blue-500/20 border-l-2 border-blue-500'
+                                    : 'hover:bg-gray-50 dark:hover:bg-white/5'
+                                  }`}
                               >
-                                {expandedLectures[subKey] 
-                                  ? <ChevronDown className="w-3.5 h-3.5 text-blue-500" /> 
+                                {expandedLectures[subKey]
+                                  ? <ChevronDown className="w-3.5 h-3.5 text-blue-500" />
                                   : <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
                                 }
                                 <span className="text-xs font-medium text-gray-600 dark:text-gray-300 

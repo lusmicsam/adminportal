@@ -370,7 +370,7 @@ export default function StudentDetailView({ student, onBack }) {
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shadow-lg ring-2 ring-white/10">
                             {(student.name || student.student_name || 'S')[0].toUpperCase()}
                         </div>
-                        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center gap-3">
+                        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent flex items-center gap-3">
                             {student.name || student.student_name}
                         </h2>
                         <span className="px-4 py-1.5 rounded-full bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/30 dark:to-blue-900/30 text-cyan-700 dark:text-cyan-400 border-2 border-cyan-500/30 font-mono text-sm font-bold shadow-md">
@@ -380,7 +380,7 @@ export default function StudentDetailView({ student, onBack }) {
                     <p className="text-gray-600 dark:text-gray-400 text-sm font-medium flex items-center gap-2">
                         {((student.batch_name || student.batch) || (student.batch_id && student.batch_id.length < 10)) && (
                             <>
-                                <span className="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs font-semibold">
+                                <span className="px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-xs font-semibold">
                                     {(student.batch_name || student.batch) ? (student.batch_name || student.batch) : student.batch_id}
                                 </span>
                                 <span className="text-gray-400">•</span>
@@ -812,7 +812,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                             <StatCard
                                                 label="Submitted"
                                                 value={attemptDetails.completion_stats?.user_submitted_count}
-                                                color="purple"
+                                                color="violet"
                                             />
                                             <StatCard
                                                 label="Completion"
@@ -1013,7 +1013,7 @@ const StatCard = ({ label, value, color = 'gray' }) => {
         emerald: 'text-emerald-500',
         red: 'text-red-500',
         blue: 'text-blue-500',
-        purple: 'text-purple-500',
+        violet: 'text-violet-500',
         cyan: 'text-cyan-500',
         gray: 'text-gray-900 dark:text-white'
     };

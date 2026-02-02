@@ -8,7 +8,7 @@ export const CircularProgress = ({ percentage = 0, size = 40, strokeWidth = 4, c
     const colors = {
         cyan: 'text-cyan-500',
         emerald: 'text-emerald-500',
-        purple: 'text-purple-500',
+        violet: 'text-violet-500',
         blue: 'text-blue-500',
         orange: 'text-orange-500'
     };

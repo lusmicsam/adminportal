@@ -92,18 +92,18 @@ export default function BatchDetailView({ batch, onBack, onSectionSelect }) {
     return (
         <div className="fixed inset-0 z-50 flex flex-col bg-gray-50 dark:bg-[#0B0F19] animate-in fade-in slide-in-from-right duration-300 overflow-hidden">
             {/* Background Effects */}
-            <div className="absolute top-0 left-0 h-[400px] w-[400px] bg-purple-500/10 blur-[100px] pointer-events-none opacity-50 dark:opacity-100" />
+            <div className="absolute top-0 left-0 h-[400px] w-[400px] bg-violet-500/10 blur-[100px] pointer-events-none opacity-50 dark:opacity-100" />
 
             {/* Header */}
             <div className="relative flex items-center justify-between p-8 border-b border-gray-200 dark:border-slate-700/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shrink-0 shadow-lg">
                 <div className="flex items-center gap-6">
-                    <button onClick={onBack} className="group p-3 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-700 hover:from-purple-500 hover:to-pink-500 dark:hover:from-purple-600 dark:hover:to-pink-600 text-gray-700 dark:text-gray-300 hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-purple-500/30 hover:scale-110">
+                    <button onClick={onBack} className="group p-3 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-700 hover:from-violet-500 hover:to-purple-500 dark:hover:from-violet-600 dark:hover:to-purple-600 text-gray-700 dark:text-gray-300 hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-violet-500/30 hover:scale-110">
                         <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                     </button>
                     <div>
-                        <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent mb-2">{batch.batch_name}</h2>
+                        <h2 className="text-3xl font-bold bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-2">{batch.batch_name}</h2>
                         <div className="flex gap-4 text-sm font-medium">
-                            <span className="flex items-center gap-2 px-3 py-1 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
+                            <span className="flex items-center gap-2 px-3 py-1 rounded-lg bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400">
                                 <Users className="w-4 h-4" />
                                 {batch.batch_student_strength || 0} Students
                             </span>
@@ -119,7 +119,7 @@ export default function BatchDetailView({ batch, onBack, onSectionSelect }) {
                     {/* Key Metrics */}
                     <div className="space-y-6">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            <TrendingUp className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+                            <TrendingUp className="w-5 h-5 text-violet-500 dark:text-violet-400" />
                             Performance Overview
                         </h3>
 
@@ -153,11 +153,11 @@ export default function BatchDetailView({ batch, onBack, onSectionSelect }) {
                 </div>
 
                 {/* RIGHT: Sections List */}
-                <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-transparent dark:bg-gradient-to-br dark:from-black/0 dark:to-purple-900/5">
+                <div className="flex-1 p-8 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-transparent dark:bg-gradient-to-br dark:from-black/0 dark:to-violet-900/5">
                     <div className="max-w-4xl mx-auto">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <Layers className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                <Layers className="w-5 h-5 text-violet-600 dark:text-violet-400" />
                                 Sections in Batch
                             </h3>
                             <div className="relative">
@@ -167,7 +167,7 @@ export default function BatchDetailView({ batch, onBack, onSectionSelect }) {
                                     placeholder="Filter sections..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="bg-white dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-purple-500/50 w-64 transition-all"
+                                    className="bg-white dark:bg-black/30 border border-gray-200 dark:border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-violet-500/50 w-64 transition-all"
                                 />
                             </div>
                         </div>
@@ -183,13 +183,13 @@ export default function BatchDetailView({ batch, onBack, onSectionSelect }) {
                                         <button
                                             key={idx}
                                             onClick={() => onSectionSelect(sec.section_name || sec.name)}
-                                            className="text-left group p-5 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-purple-500/30 transition-all hover:-translate-y-1 duration-300 shadow-sm dark:shadow-none"
+                                            className="text-left group p-5 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/10 hover:border-violet-500/30 transition-all hover:-translate-y-1 duration-300 shadow-sm dark:shadow-none"
                                         >
                                             <div className="flex justify-between items-start mb-3">
-                                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-lg border border-purple-100 dark:border-white/5">
+                                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500/20 to-blue-500/20 text-violet-600 dark:text-violet-400 flex items-center justify-center font-bold text-lg border border-violet-100 dark:border-white/5">
                                                     {sec.section_name?.[0] || 'S'}
                                                 </div>
-                                                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400 -translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all" />
+                                                <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-violet-600 dark:group-hover:text-violet-400 -translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all" />
                                             </div>
                                             <h4 className="font-bold text-gray-900 dark:text-white text-lg mb-1">{sec.section_name}</h4>
 

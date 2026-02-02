@@ -435,7 +435,7 @@ export default function DeepDiveDashboard() {
                                     {/* Animated Logo */}
                                     <div className="relative w-16 h-16 flex-shrink-0">
                                         {/* Rotating Glow */}
-                                        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-full opacity-20 blur-xl animate-spin-slow" />
+                                        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-600 rounded-full opacity-20 blur-xl animate-spin-slow" />
 
                                         {/* Logo */}
                                         <div className="relative w-full h-full animate-float">
@@ -449,7 +449,7 @@ export default function DeepDiveDashboard() {
 
                                     {/* Title & Status */}
                                     <div>
-                                        <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+                                        <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600">
                                             TheEduCode
                                         </h1>
                                         <p className="text-gray-600 dark:text-gray-300 mt-1 flex items-center gap-2.5 text-base font-medium">
@@ -495,7 +495,7 @@ export default function DeepDiveDashboard() {
                                             });
                                             logout();
                                         }}
-                                        className="group px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-pink-600 text-white border border-red-600/20 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 flex items-center gap-2 font-medium"
+                                        className="group px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-purple-600 text-white border border-red-600/20 hover:shadow-lg hover:shadow-red-500/30 transition-all duration-300 flex items-center gap-2 font-medium"
                                     >
                                         <LogOut className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                                         <span className="hidden sm:inline">Logout</span>
@@ -507,11 +507,11 @@ export default function DeepDiveDashboard() {
                         {/* Main Navigation */}
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             {[
-                                { id: 'batches', label: 'Batches', icon: LayoutGrid, color: 'purple', gradient: 'from-purple-500 to-pink-500', count: batches.length },
-                                { id: 'sections', label: 'Sections', icon: Layers, color: 'emerald', gradient: 'from-emerald-500 to-teal-500', count: sections.length },
-                                { id: 'teachers', label: 'Teachers', icon: Users, color: 'cyan', gradient: 'from-cyan-500 to-blue-500', count: teachers.length },
-                                { id: 'students', label: 'Students', icon: GraduationCap, color: 'blue', gradient: 'from-blue-500 to-indigo-500', count: students.length },
-                                { id: 'courses', label: 'Courses', icon: BookOpen, color: 'orange', gradient: 'from-orange-500 to-amber-500', count: courses.length },
+                                { id: 'batches', label: 'Batches', icon: LayoutGrid, color: 'violet', gradient: 'from-violet-700 to-indigo-400', count: batches.length },
+                                { id: 'sections', label: 'Sections', icon: Layers, color: 'emerald', gradient: 'from-emerald-700 to-teal-400', count: sections.length },
+                                { id: 'teachers', label: 'Teachers', icon: Users, color: 'cyan', gradient: 'from-cyan-700 to-blue-400', count: teachers.length },
+                                { id: 'students', label: 'Students', icon: GraduationCap, color: 'blue', gradient: 'from-blue-700 to-indigo-400' },
+                                { id: 'courses', label: 'Courses', icon: BookOpen, color: 'amber', gradient: 'from-amber-700 to-yellow-400', count: courses.length },
                             ].map(item => (
                                 <button
                                     key={item.id}
@@ -562,14 +562,14 @@ export default function DeepDiveDashboard() {
                         {/* View Content */}
                         <div className="glass-panel rounded-3xl p-8 md:p-10 min-h-[600px] shadow-2xl relative overflow-hidden border border-white/10">
                             {/* Decorative Elements */}
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl" />
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-violet-500/10 rounded-full blur-3xl" />
                             <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-cyan-500/10 to-indigo-500/10 rounded-full blur-3xl" />
 
                             {/* Toolbar */}
                             <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 border-b border-white/10 pb-8">
                                 {/* Title Section */}
                                 <div className="flex items-center gap-4">
-                                    <h2 className="text-3xl font-bold capitalize bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+                                    <h2 className="text-3xl font-bold capitalize bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600">
                                         {view}
                                     </h2>
                                     {view !== 'students' && (
@@ -639,29 +639,29 @@ export default function DeepDiveDashboard() {
                                                 <div className="relative">
                                                     {/* Header with Avatar */}
                                                     <div className="flex items-center gap-4 mb-6">
-    <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shrink-0 shadow-xl group-hover:scale-110 transition-transform duration-300 overflow-hidden">
-        <div className="absolute inset-0 bg-white/10 rounded-2xl" />
-        <span className="relative z-10 text-white font-bold text-2xl">
-            {t.teacher_name 
-                ? t.teacher_name
-                    .split(' ')
-                    .map(word => word[0])
-                    .slice(0, 2)
-                    .join('')
-                    .toUpperCase()
-                : 'T'}
-        </span>
-    </div>
-    <div className="overflow-hidden flex-1">
-        <h3 className="font-bold text-lg truncate text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" title={t.teacher_name}>
-            {t.teacher_name || 'Unknown'}
-        </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400 truncate font-mono mt-0.5" title={t.teacher_email}>
-            {t.teacher_email || 'No email'}
-        </p>
-    </div>
-</div>
-                                                    
+                                                        <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center shrink-0 shadow-xl group-hover:scale-110 transition-transform duration-300 overflow-hidden">
+                                                            <div className="absolute inset-0 bg-white/10 rounded-2xl" />
+                                                            <span className="relative z-10 text-white font-bold text-2xl">
+                                                                {t.teacher_name
+                                                                    ? t.teacher_name
+                                                                        .split(' ')
+                                                                        .map(word => word[0])
+                                                                        .slice(0, 2)
+                                                                        .join('')
+                                                                        .toUpperCase()
+                                                                    : 'T'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="overflow-hidden flex-1">
+                                                            <h3 className="font-bold text-lg truncate text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" title={t.teacher_name}>
+                                                                {t.teacher_name || 'Unknown'}
+                                                            </h3>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate font-mono mt-0.5" title={t.teacher_email}>
+                                                                {t.teacher_email || 'No email'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
 
                                                     {/* Info Panel */}
                                                     <div className="space-y-4 mb-6 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900/50 dark:to-slate-900/30 p-5 rounded-xl border border-gray-200 dark:border-slate-700">
@@ -731,18 +731,18 @@ export default function DeepDiveDashboard() {
                                                 <button
                                                     key={batch.batch_id}
                                                     onClick={() => handleBatchClick(batch)}
-                                                    className="group relative text-left w-full p-6 rounded-2xl bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 hover:border-purple-400 dark:hover:border-purple-500 hover:transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-purple-500/20 overflow-hidden"
+                                                    className="group relative text-left w-full p-6 rounded-2xl bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 hover:border-violet-400 dark:hover:border-violet-500 hover:transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-violet-500/20 overflow-hidden"
                                                 >
                                                     {/* Background Gradient Glow */}
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-pink-500/0 group-hover:from-purple-500/10 group-hover:to-pink-500/10 transition-all duration-300" />
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 to-purple-500/0 group-hover:from-violet-500/10 group-hover:to-purple-500/10 transition-all duration-300" />
 
                                                     {/* Decorative Corner */}
-                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-bl-[100px] opacity-50 group-hover:opacity-100 transition-opacity" />
+                                                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-violet-500/10 to-purple-500/10 rounded-bl-[100px] opacity-50 group-hover:opacity-100 transition-opacity" />
 
                                                     <div className="relative">
                                                         {/* Header with Icon and Status */}
                                                         <div className="flex justify-between items-start mb-5">
-                                                            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
+                                                            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 text-white flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform duration-300">
                                                                 <LayoutGrid className="w-7 h-7" />
                                                             </div>
                                                             <span className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-md ${isActive
@@ -754,7 +754,7 @@ export default function DeepDiveDashboard() {
                                                         </div>
 
                                                         {/* Batch Name */}
-                                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" title={batch.batch_name}>
+                                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 line-clamp-2 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors" title={batch.batch_name}>
                                                             {batch.batch_name}
                                                         </h3>
 
@@ -766,8 +766,8 @@ export default function DeepDiveDashboard() {
                                                                 </div>
                                                                 <div className="text-[10px] text-gray-600 dark:text-gray-400 uppercase font-semibold mt-1">Students</div>
                                                             </div>
-                                                            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-xl border border-purple-200 dark:border-purple-800/30 text-center">
-                                                                <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                                            <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 p-4 rounded-xl border border-violet-200 dark:border-violet-800/30 text-center">
+                                                                <div className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
                                                                     {batch.registered_courses_id?.length || 0}
                                                                 </div>
                                                                 <div className="text-[10px] text-gray-600 dark:text-gray-400 uppercase font-semibold mt-1">Courses</div>
@@ -782,7 +782,7 @@ export default function DeepDiveDashboard() {
                                                         </div>
 
                                                         {/* Chevron */}
-                                                        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-purple-500">
+                                                        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-violet-500">
                                                             <ChevronRight className="w-6 h-6" />
                                                         </div>
                                                     </div>
