@@ -716,82 +716,82 @@ export default function CourseDetailView({ course, onBack }) {
     //   );
     // };
     const renderMCQ = (item) => {
-  const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-  return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
-      {/* Question Image */}
-      {item.images?.[0] && (
-        <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-lg">
-          <img
-            src={item.images[0].url}
-            alt="Question figure"
-            className="w-full h-auto max-h-80 object-contain bg-white dark:bg-[#0f1523]"
-          />
-        </div>
-      )}
+      return (
+        <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+          {/* Question Image */}
+          {item.images?.[0] && (
+            <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/10 shadow-lg">
+              <img
+                src={item.images[0].url}
+                alt="Question figure"
+                className="w-full h-auto max-h-80 object-contain bg-white dark:bg-[#0f1523]"
+              />
+            </div>
+          )}
 
-      {/* Question Card */}
-      <div className="bg-white dark:bg-[#0f1523] rounded-2xl p-8 shadow-sm 
+          {/* Question Card */}
+          <div className="bg-white dark:bg-[#0f1523] rounded-2xl p-8 shadow-sm 
                     border border-gray-100 dark:border-white/5 relative overflow-hidden">
-        {/* Decorative */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl 
+            {/* Decorative */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl 
                       from-violet-500/5 to-transparent rounded-bl-full -mr-10 -mt-10" />
 
-        <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white 
+            <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white 
                      leading-relaxed relative z-10 mb-8">
-          {displayTitle}
-        </h3>
+              {displayTitle}
+            </h3>
 
-        <div className="space-y-3 relative z-10">
-          {item.options?.map((opt, idx) => {
-            const isCorrect = opt.isAnswer;
+            <div className="space-y-3 relative z-10">
+              {item.options?.map((opt, idx) => {
+                const isCorrect = opt.isAnswer;
 
-            return (
-              <div
-                key={idx}
-                className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-300
-                          ${isCorrect 
-                            ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/20' 
-                            : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10'
-                          }`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center 
+                return (
+                  <div
+                    key={idx}
+                    className={`w-full p-4 rounded-xl border-2 text-left transition-all duration-300
+                          ${isCorrect
+                        ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 ring-2 ring-emerald-500/20'
+                        : 'bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10'
+                      }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center 
                                  text-sm font-bold transition-all
                                  ${isCorrect
-                                   ? 'bg-emerald-500 text-white'
-                                   : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400'
-                                 }`}>
-                    {isCorrect ? (
-                      <CheckCircle className="w-5 h-5" />
-                    ) : (
-                      letters[idx]
-                    )}
-                  </div>
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400'
+                        }`}>
+                        {isCorrect ? (
+                          <CheckCircle className="w-5 h-5" />
+                        ) : (
+                          letters[idx]
+                        )}
+                      </div>
 
-                  <span className={`flex-1 pt-1.5 font-medium
+                      <span className={`flex-1 pt-1.5 font-medium
                                   ${isCorrect
-                                    ? 'text-emerald-900 dark:text-emerald-100'
-                                    : 'text-gray-700 dark:text-gray-300'
-                                  }`}>
-                    {opt.option}
-                  </span>
+                          ? 'text-emerald-900 dark:text-emerald-100'
+                          : 'text-gray-700 dark:text-gray-300'
+                        }`}>
+                        {opt.option}
+                      </span>
 
-                  {isCorrect && (
-                    <span className="px-2 py-1 rounded-md bg-emerald-500 text-white text-xs font-bold uppercase">
-                      Answer
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                      {isCorrect && (
+                        <span className="px-2 py-1 rounded-md bg-emerald-500 text-white text-xs font-bold uppercase">
+                          Answer
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
-};
+      );
+    };
     // ─────────────────────────────────────────────────────────────────────────
     // Coding Renderer
     // ─────────────────────────────────────────────────────────────────────────
@@ -836,9 +836,58 @@ export default function CourseDetailView({ course, onBack }) {
             )}
           </div>
 
+          {/* Constraints: Whitelist & Blacklist */}
+          {(item.whitelist?.length > 0 || item.blacklist?.length > 0) && (
+            <div className="mt-6 pt-6 border-t border-gray-100 dark:border-white/5 space-y-4">
+              {item.whitelist?.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-2">
+                    <CheckCircle className="w-3.5 h-3.5" /> Allowed Terms (Whitelist)
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {item.whitelist.map((term, idx) => (
+                      <span key={idx} className="px-2 py-1 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs font-mono border border-emerald-100 dark:border-emerald-500/20">
+                        {term}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {item.blacklist?.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 mb-2 flex items-center gap-2">
+                    <X className="w-3.5 h-3.5" /> Banned Terms (Blacklist)
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {item.blacklist.map((term, idx) => (
+                      <span key={idx} className="px-2 py-1 rounded-md bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 text-xs font-mono border border-rose-100 dark:border-rose-500/20">
+                        {term}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Header Code Block */}
+          {
+            item.header && (
+              <div className="rounded-xl overflow-hidden bg-[#1e1e1e] border border-gray-800 border-b-0 rounded-b-none opacity-90 relative -mb-px z-10">
+                <div className="px-4 py-1.5 bg-[#252526] border-b border-[#3e3e42] flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-gray-500">Header (Read-only)</span>
+                </div>
+                <pre className="p-4 font-mono text-sm leading-6 text-gray-500 overflow-x-auto select-none bg-black/20">
+                  <code>{item.header}</code>
+                </pre>
+              </div>
+            )
+          }
+
           {/* Code Editor */}
-          <div className="rounded-2xl overflow-hidden shadow-2xl bg-[#1e1e1e] 
-                        border border-gray-800 ring-1 ring-white/5">
+          <div className={`rounded-2xl overflow-hidden shadow-2xl bg-[#1e1e1e] 
+                        border border-gray-800 ring-1 ring-white/5 ${item.header ? 'rounded-t-none border-t-0' : ''} ${item.footer ? 'rounded-b-none border-b-0' : ''}`}>
             {/* Editor Header */}
             <div className="flex items-center justify-between px-4 py-3 
                           bg-[#252526] border-b border-[#3e3e42]">
@@ -873,53 +922,69 @@ export default function CourseDetailView({ course, onBack }) {
             </div>
           </div>
 
+          {/* Footer Code Block */}
+          {
+            item.footer && (
+              <div className="rounded-xl overflow-hidden bg-[#1e1e1e] border border-gray-800 border-t-0 rounded-t-none opacity-90 relative -mt-px z-10">
+                <div className="px-4 py-1.5 bg-[#252526] border-t border-[#3e3e42] flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-gray-500">Footer (Read-only)</span>
+                </div>
+                <pre className="p-4 font-mono text-sm leading-6 text-gray-500 overflow-x-auto select-none bg-black/20">
+                  <code>{item.footer}</code>
+                </pre>
+              </div>
+            )
+          }
+
           {/* Test Cases */}
-          {(item['sample-input-output'] || item['hidden-test-cases']) && (
-            <div className="space-y-4">
-              <h4 className="text-sm font-bold uppercase tracking-wider text-gray-500">
-                Test Cases
-              </h4>
-              <div className="grid gap-4 md:grid-cols-2">
-                {[
-                  ...(item['sample-input-output'] || []).map(tc => ({ ...tc, variant: 'sample' })),
-                  ...(item['hidden-test-cases'] || []).map(tc => ({ ...tc, variant: 'hidden' }))
-                ].map((tc, i) => (
-                  <div key={i} className="bg-white dark:bg-[#0f1523] rounded-xl 
+          {
+            (item['sample-input-output'] || item['hidden-test-cases']) && (
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-gray-500">
+                  Test Cases
+                </h4>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {[
+                    ...(item['sample-input-output'] || []).map(tc => ({ ...tc, variant: 'sample' })),
+                    ...(item['hidden-test-cases'] || []).map(tc => ({ ...tc, variant: 'hidden' }))
+                  ].map((tc, i) => (
+                    <div key={i} className="bg-white dark:bg-[#0f1523] rounded-xl 
                                         border border-gray-200 dark:border-white/5 
                                         overflow-hidden shadow-sm">
-                    <div className="px-4 py-2 bg-gray-50/50 dark:bg-white/5 
+                      <div className="px-4 py-2 bg-gray-50/50 dark:bg-white/5 
                                   border-b border-gray-100 dark:border-white/5 
                                   flex justify-between items-center">
-                      <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded
+                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded
                                       ${tc.variant === 'sample'
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
-                          : 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300'
-                        }`}>
-                        {tc.variant} #{i + 1}
-                      </span>
-                    </div>
-                    <div className="p-4 grid grid-cols-2 gap-4 text-xs font-mono">
-                      <div>
-                        <div className="text-[10px] font-bold text-gray-400 mb-1 uppercase">Input</div>
-                        <div className="p-2 bg-gray-50 dark:bg-black/20 rounded 
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+                            : 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300'
+                          }`}>
+                          {tc.variant} #{i + 1}
+                        </span>
+                      </div>
+                      <div className="p-4 grid grid-cols-2 gap-4 text-xs font-mono">
+                        <div>
+                          <div className="text-[10px] font-bold text-gray-400 mb-1 uppercase">Input</div>
+                          <div className="p-2 bg-gray-50 dark:bg-black/20 rounded 
                                       border border-gray-200 dark:border-white/5">
-                          {tc.input}
+                            {tc.input}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[10px] font-bold text-gray-400 mb-1 uppercase">Output</div>
+                          <div className="p-2 bg-gray-50 dark:bg-black/20 rounded 
+                                      border border-gray-200 dark:border-white/5">
+                            {tc.output}
+                          </div>
                         </div>
                       </div>
-                      <div>
-                        <div className="text-[10px] font-bold text-gray-400 mb-1 uppercase">Output</div>
-                        <div className="p-2 bg-gray-50 dark:bg-black/20 rounded 
-                                      border border-gray-200 dark:border-white/5">
-                          {tc.output}
-                        </div>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )
+          }
+        </div >
       );
     };
 

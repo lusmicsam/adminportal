@@ -39,6 +39,10 @@ const nextConfig = {
         destination: 'https://ap-is-seven.vercel.app/api/university/admin/get-practice-courses-by-batch',
       },
       {
+        source: '/api/proxy/admin/api/university/admin/get-exam-courses-by-batch',
+        destination: 'https://ap-is-seven.vercel.app/api/university/admin/get-exam-courses-by-batch',
+      },
+      {
         source: '/api/proxy/admin/:path*',
         destination: 'https://ap-is-seven.vercel.app/:path*',
       },

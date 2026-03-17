@@ -6,13 +6,15 @@ import { getAdminToken } from '../utils/cookies';
 import { Skeleton } from './Skeletons';
 import { useAuth } from '../context/AuthContext';
 
-export default function StudentDetailView({ student, onBack }) {
+export default function StudentDetailView({ student, onBack, onStudentSelect }) {
     const [viewLink, setViewLink] = useState('courses');
     const [courses, setCourses] = useState([]);
+    const [examCourses, setExamCourses] = useState([]);
     const [loadingCourses, setLoadingCourses] = useState(false);
     const { user } = useAuth();
 
     const [selectedCourse, setSelectedCourse] = useState(null);
+    const [selectedExamCourse, setSelectedExamCourse] = useState(null);
     const [courseStructure, setCourseStructure] = useState(null);
     const [loadingStructure, setLoadingStructure] = useState(false);
 
@@ -61,7 +63,9 @@ export default function StudentDetailView({ student, onBack }) {
             }
 
             if (currentStudent.batch_id || currentStudent.batch) {
-                fetchCourses(currentStudent.batch_id || currentStudent.batch);
+                const bId = currentStudent.batch_id || currentStudent.batch;
+                fetchCourses(bId);
+                fetchExamCourses(bId, currentStudent);
             }
         };
 
@@ -179,6 +183,107 @@ export default function StudentDetailView({ student, onBack }) {
         }
     };
 
+    // Fetch Exam Courses
+    const fetchExamCourses = async (batchId, studentData) => {
+        try {
+            if (!batchId) return;
+            const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.getExamCoursesByBatch}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ batch_id: batchId }),
+                credentials: 'include'
+            });
+            const data = await res.json();
+
+            let examList = [];
+            if (data.success && data.data) {
+                if (Array.isArray(data.data)) examList = data.data;
+                else if (data.data.courses) examList = data.data.courses;
+            }
+
+            // For each exam course, fetch the student's exam progress
+            const enriched = await Promise.all(examList.map(async (course) => {
+                try {
+                    const sectionName = studentData.section_name || studentData.section || '';
+                    if (!sectionName) return { ...course, examData: null };
+
+                    const token = getAdminToken();
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                    const examRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.examDetails}`, {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({
+                            section_name: sectionName,
+                            course_id: course.course_id
+                        }),
+                        credentials: 'include'
+                    });
+                    const examJson = await examRes.json();
+
+                    if (examJson.success && examJson.data && Array.isArray(examJson.data.students)) {
+                        const regId = studentData.uni_reg_id || studentData.reg_id;
+                        const myResult = examJson.data.students.find(s => s.uni_reg_id === regId);
+                        // Calculate rank
+                        const sorted = [...examJson.data.students].sort((a, b) => (b.total_marks || 0) - (a.total_marks || 0));
+                        let rank = null;
+                        if (myResult) {
+                            rank = sorted.findIndex(s => s.uni_reg_id === regId) + 1;
+                        }
+                        return {
+                            ...course,
+                            examData: {
+                                ...examJson.data,
+                                myResult,
+                                rank,
+                                totalParticipants: examJson.data.students.length
+                            }
+                        };
+                    }
+                    return { ...course, examData: null };
+                } catch (e) {
+                    return { ...course, examData: null };
+                }
+            }));
+
+            setExamCourses(enriched.filter(c => c.examData));
+        } catch (e) {
+            console.error('Failed to fetch exam courses:', e);
+        }
+    };
+
+    const handleExamCourseSelect = async (examCourse) => {
+        setSelectedExamCourse(examCourse);
+        setSelectedCourse(examCourse); // Reuse selectedCourse for structure loading
+        setViewLink('exam_deep_dive');
+        setLoadingStructure(true);
+        setSubUnitHistory(null);
+        setInspectingSubUnit(null);
+        setUnitCompletions({});
+        setUnitBreakdowns({});
+        setOverallCourseProgress(0);
+
+        try {
+            const token = getAdminToken();
+            const headers = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.courseStructure(examCourse.course_id)}`, {
+                credentials: 'include',
+                headers
+            });
+            const data = await res.json();
+            const structure = data.data || [];
+            setCourseStructure(structure);
+            fetchInitialCourseProgress(fullStudent, examCourse.course_id, structure);
+        } catch (e) {
+            setCourseStructure([]);
+        } finally {
+            setLoadingStructure(false);
+        }
+    };
+
     const handleCourseSelect = async (course) => {
         setSelectedCourse(course);
         setViewLink('deep_dive');
@@ -212,6 +317,7 @@ export default function StudentDetailView({ student, onBack }) {
     const handleBackToCourses = () => {
         setViewLink('courses');
         setSelectedCourse(null);
+        setSelectedExamCourse(null);
         setCourseStructure(null);
         setSubUnitHistory(null);
         setSelectedUnit(null);
@@ -359,7 +465,7 @@ export default function StudentDetailView({ student, onBack }) {
                 </div>
 
                 <button
-                    onClick={viewLink === 'deep_dive' ? handleBackToCourses : onBack}
+                    onClick={(viewLink === 'deep_dive' || viewLink === 'exam_deep_dive') ? handleBackToCourses : onBack}
                     className="group p-3 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-700 hover:from-blue-500 hover:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600 text-gray-700 dark:text-gray-300 hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-blue-500/30 hover:scale-110 z-10"
                 >
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
@@ -386,7 +492,15 @@ export default function StudentDetailView({ student, onBack }) {
                                 <span className="text-gray-400">•</span>
                             </>
                         )}
-                        <span className="font-semibold">{courses.length} Enrolled Course{courses.length !== 1 ? 's' : ''}</span>
+                        <span className="font-semibold">{courses.length + examCourses.length} Enrolled Course{(courses.length + examCourses.length) !== 1 ? 's' : ''}</span>
+                        {examCourses.length > 0 && (
+                            <>
+                                <span className="text-gray-400">•</span>
+                                <span className="px-2 py-0.5 rounded-md bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 text-xs font-bold">
+                                    {examCourses.length} Exam{examCourses.length !== 1 ? 's' : ''}
+                                </span>
+                            </>
+                        )}
                     </p>
                 </div>
             </div>
@@ -396,9 +510,162 @@ export default function StudentDetailView({ student, onBack }) {
                 {viewLink === 'courses' && (
                     <CoursesGridView
                         courses={courses}
+                        examCourses={examCourses}
                         loading={loadingCourses}
                         onSelect={handleCourseSelect}
+                        onExamSelect={handleExamCourseSelect}
                     />
+                )}
+
+                {/* Exam Deep Dive View */}
+                {viewLink === 'exam_deep_dive' && selectedExamCourse && (
+                    <div className="flex flex-col h-full overflow-hidden">
+                        {/* Compact Exam Score Card */}
+                        {selectedExamCourse.examData?.myResult && (
+                            <div className="shrink-0 mx-8 mt-6 p-4 bg-gradient-to-r from-violet-50 via-white to-purple-50 dark:from-violet-900/20 dark:via-[#1A1F2E] dark:to-purple-900/20 rounded-2xl border border-violet-200 dark:border-violet-500/20 shadow-md">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-6">
+                                        <div className="flex items-center gap-2">
+                                            <Trophy className="w-4 h-4 text-violet-500" />
+                                            <span className="text-xs text-violet-500 uppercase font-bold tracking-wider">Your Exam Performance</span>
+                                        </div>
+                                        <div className="flex items-center gap-6">
+                                            <div className="text-center">
+                                                <div className="text-2xl font-black bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                                                    {selectedExamCourse.examData.myResult.total_marks}
+                                                </div>
+                                                <div className="text-[9px] text-gray-500 font-bold uppercase">Score</div>
+                                            </div>
+                                            {selectedExamCourse.examData.rank && (
+                                                <div className="text-center">
+                                                    <div className={`text-2xl font-black ${selectedExamCourse.examData.rank <= 3 ? 'bg-gradient-to-r from-amber-500 to-yellow-500 bg-clip-text text-transparent' : 'text-gray-700 dark:text-gray-200'}`}>
+                                                        #{selectedExamCourse.examData.rank}
+                                                    </div>
+                                                    <div className="text-[9px] text-gray-500 font-bold uppercase">of {selectedExamCourse.examData.totalParticipants}</div>
+                                                </div>
+                                            )}
+                                            <div className="text-center">
+                                                <div className="text-lg font-black text-cyan-600 dark:text-cyan-400">
+                                                    {selectedExamCourse.examData.myResult.marks_breakdown?.coding_marks || 0}
+                                                </div>
+                                                <div className="text-[9px] text-gray-500 font-bold uppercase">Coding</div>
+                                            </div>
+                                            <div className="text-center">
+                                                <div className="text-lg font-black text-violet-600 dark:text-violet-400">
+                                                    {selectedExamCourse.examData.myResult.marks_breakdown?.mcq_marks || 0}
+                                                </div>
+                                                <div className="text-[9px] text-gray-500 font-bold uppercase">MCQ</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedExamCourse.examData.myResult.exam_completion_percentage === 100 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-300'}`}>
+                                        {selectedExamCourse.examData.myResult.exam_completion_percentage || 0}% Complete
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Deep Dive Layout (same as practice courses) */}
+                        <div className="flex flex-1 overflow-hidden">
+                            {/* LEFT COLUMN */}
+                            <div className="w-1/3 min-w-[350px] border-r border-gray-200 dark:border-white/5 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-black/10 backdrop-blur-md p-6">
+                                <div className="mb-6">
+                                    <div className="text-xs text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Trophy className="w-3 h-3" /> Exam Course</div>
+                                    <h3 className="text-2xl font-bold leading-tight text-gray-900 dark:text-white mb-4">{selectedExamCourse.course_name}</h3>
+                                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/5 shadow-sm dark:shadow-none">
+                                        <CircularProgress percentage={overallCourseProgress} size={48} strokeWidth={4} />
+                                        <div>
+                                            <div className="text-gray-900 dark:text-white font-bold">Overall Progress</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">Based on completed units</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {loadingStructure ? (
+                                    <div className="space-y-4">
+                                        {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full rounded-xl bg-white/5" />)}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {courseStructure && Array.isArray(courseStructure) && courseStructure.map((unit) => (
+                                            <div key={unit.unit_id} className="rounded-xl border border-gray-200 dark:border-white/5 bg-white dark:bg-white/5 overflow-hidden transition-all shadow-sm dark:shadow-none">
+                                                <button
+                                                    onClick={() => toggleUnit(unit.unit_id)}
+                                                    className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-2 h-2 rounded-full shadow-[0_0_8px] ${selectedUnit === unit.unit_id ? 'bg-violet-500 shadow-violet-500/60' : 'bg-gray-400 dark:bg-gray-600 shadow-transparent'}`} />
+                                                        <span className={`font-semibold text-sm text-left ${selectedUnit === unit.unit_id ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-300'}`}>{unit.unit_name}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <CircularProgress percentage={unitCompletions[unit.unit_id] || 0} size={32} strokeWidth={3} />
+                                                        {selectedUnit === unit.unit_id ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+                                                    </div>
+                                                </button>
+
+                                                {selectedUnit === unit.unit_id && (
+                                                    <div className="bg-gray-50 dark:bg-black/20 border-t border-gray-100 dark:border-white/5 p-2 space-y-1">
+                                                        {unit.sub_units && unit.sub_units.map((sub) => {
+                                                            const breakdown = unitBreakdowns[unit.unit_id]?.find(b => b.sub_unit_id === sub.sub_unit_id);
+                                                            const progress = breakdown?.progress_percentage || 0;
+
+                                                            return (
+                                                                <button
+                                                                    key={sub.sub_unit_id}
+                                                                    onClick={() => handleSubUnitClick(unit.unit_id, sub.sub_unit_id, sub)}
+                                                                    className={`w-full text-left p-3 rounded-lg text-xs transition-all flex justify-between items-center group
+                                                                        ${inspectingSubUnit?.subUnitId === sub.sub_unit_id
+                                                                            ? 'bg-violet-500/20 text-violet-700 dark:text-violet-400 border-2 border-violet-500/70 font-bold shadow-lg shadow-violet-500/30'
+                                                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/5 border-2 border-transparent'}`
+                                                                    }
+                                                                >
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span>{sub.title}</span>
+                                                                        {progress === 100 && (
+                                                                            <Check className="w-3 h-3 text-emerald-500" />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        {breakdown && (
+                                                                            <span className="text-[10px] text-gray-400">{progress}%</span>
+                                                                        )}
+                                                                        {inspectingSubUnit?.subUnitId === sub.sub_unit_id && <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* RIGHT COLUMN */}
+                            <div className="flex-1 p-8 overflow-y-auto custom-scrollbar relative">
+                                {inspectingSubUnit ? (
+                                    <DeepDiveRightPanel
+                                        student={fullStudent}
+                                        courseId={selectedExamCourse.course_id}
+                                        subUnit={inspectingSubUnit}
+                                        history={subUnitHistory}
+                                        loadingHistory={loadingHistory}
+                                        resultType={resultType}
+                                        setResultType={handleResultTypeChange}
+                                    />
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center text-center text-gray-500">
+                                        <div className="w-24 h-24 rounded-full bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center mb-6 animate-pulse border border-violet-200 dark:border-violet-500/20">
+                                            <Trophy className="w-10 h-10 opacity-30 text-violet-500" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Exam Detail View</h3>
+                                        <p className="max-w-md mx-auto text-gray-400">Select a subunit from the left panel to view detailed exam submissions, attempt history, and scores.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 )}
 
                 {viewLink === 'deep_dive' && selectedCourse && (
@@ -508,7 +775,7 @@ export default function StudentDetailView({ student, onBack }) {
     );
 }
 
-const CoursesGridView = ({ courses, loading, onSelect }) => {
+const CoursesGridView = ({ courses, examCourses = [], loading, onSelect, onExamSelect }) => {
     if (loading) {
         return (
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -518,9 +785,11 @@ const CoursesGridView = ({ courses, loading, onSelect }) => {
     }
     return (
         <div className="p-8 overflow-y-auto h-full custom-scrollbar">
+            {/* Practice Courses */}
             <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-white">
                 <BookOpen className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-                Enrolled Courses
+                Practice Courses
+                <span className="text-sm font-normal text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-md">{courses.length}</span>
             </h3>
             {courses.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -551,9 +820,270 @@ const CoursesGridView = ({ courses, loading, onSelect }) => {
                 </div>
             ) : (
                 <div className="text-center text-gray-500 py-10">
-                    No courses found for this student.
+                    No practice courses found for this student.
                 </div>
             )}
+
+            {/* Exam Courses */}
+            {examCourses.length > 0 && (
+                <div className="mt-10">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-white">
+                        <Trophy className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                        Exam Courses
+                        <span className="text-sm font-normal text-gray-400 bg-violet-100 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-md">{examCourses.length}</span>
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {examCourses.map((course, idx) => {
+                            const myResult = course.examData?.myResult;
+                            const rank = course.examData?.rank;
+                            const totalParticipants = course.examData?.totalParticipants || 0;
+
+                            return (
+                                <button
+                                    key={idx}
+                                    onClick={() => onExamSelect && onExamSelect(course)}
+                                    className="text-left relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/10 dark:to-purple-900/10 border border-violet-200 dark:border-violet-500/20 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 hover:border-violet-400/50 dark:hover:border-violet-500/40 group hover:scale-[1.02] hover:-translate-y-1"
+                                >
+                                    {/* Decorative Top Corner */}
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-500/10 to-transparent rounded-bl-full -mr-4 -mt-4 group-hover:scale-110 transition-all" />
+
+                                    <div className="relative z-10">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white shadow-lg">
+                                                <Trophy className="w-6 h-6" />
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1">
+                                                <span className="px-2 py-0.5 rounded-full bg-violet-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm">Exam</span>
+                                                {course.course_code && (
+                                                    <span className="text-[10px] font-mono text-violet-500 dark:text-violet-400">{course.course_code}</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                                            {course.course_name}
+                                        </h4>
+
+                                        {myResult ? (
+                                            <div className="space-y-3">
+                                                {/* Score + Rank Row */}
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider block">Score</span>
+                                                        <span className="text-2xl font-black bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                                                            {myResult.total_marks}
+                                                        </span>
+                                                    </div>
+                                                    {rank && (
+                                                        <div className="text-right">
+                                                            <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider block">Rank</span>
+                                                            <span className={`text-xl font-black ${rank <= 3 ? 'bg-gradient-to-r from-amber-500 to-yellow-500 bg-clip-text text-transparent' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                                #{rank}
+                                                                <span className="text-xs font-normal text-gray-400">/{totalParticipants}</span>
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Marks Breakdown */}
+                                                <div className="flex gap-3">
+                                                    <div className="flex-1 bg-white dark:bg-white/5 rounded-lg p-2 text-center border border-gray-200 dark:border-white/5">
+                                                        <div className="text-[10px] text-cyan-600 dark:text-cyan-400 font-bold uppercase">Coding</div>
+                                                        <div className="text-sm font-bold text-gray-900 dark:text-white">{myResult.marks_breakdown?.coding_marks || 0}</div>
+                                                    </div>
+                                                    <div className="flex-1 bg-white dark:bg-white/5 rounded-lg p-2 text-center border border-gray-200 dark:border-white/5">
+                                                        <div className="text-[10px] text-violet-600 dark:text-violet-400 font-bold uppercase">MCQ</div>
+                                                        <div className="text-sm font-bold text-gray-900 dark:text-white">{myResult.marks_breakdown?.mcq_marks || 0}</div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Completion */}
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs text-gray-500">Completion</span>
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${myResult.exam_completion_percentage === 100 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-300'}`}>
+                                                        {myResult.exam_completion_percentage || 0}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2 text-sm text-gray-400 bg-white/50 dark:bg-white/5 p-3 rounded-lg">
+                                                <AlertCircle className="w-4 h-4" />
+                                                No exam data available
+                                            </div>
+                                        )}
+
+                                        {/* CTA */}
+                                        <div className="mt-4 pt-3 border-t border-violet-200/50 dark:border-violet-500/10 flex items-center text-sm text-violet-600 dark:text-violet-400 group-hover:text-violet-500 transition-colors">
+                                            View Marks <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ─── Exam Detail View (marks, rank, leaderboard) ────────────────────
+const ExamDetailView = ({ examCourse, studentRegId, onBack, onStudentSelect }) => {
+    const examData = examCourse?.examData;
+    const myResult = examData?.myResult;
+    const rank = examData?.rank;
+    const totalParticipants = examData?.totalParticipants || 0;
+
+    // Full leaderboard sorted by marks
+    const leaderboard = React.useMemo(() => {
+        if (!examData?.students) return [];
+        const sorted = [...examData.students].sort((a, b) => (b.total_marks || 0) - (a.total_marks || 0));
+        let currentRank = 1;
+        return sorted.map((s, idx) => {
+            if (idx > 0 && (sorted[idx - 1].total_marks || 0) !== (s.total_marks || 0)) {
+                currentRank = idx + 1;
+            }
+            return { ...s, rank: currentRank };
+        });
+    }, [examData]);
+
+    return (
+        <div className="flex flex-col h-full overflow-auto custom-scrollbar">
+            <div className="p-8 space-y-6">
+                {/* Header */}
+                <div className="flex items-center gap-4">
+                    <button onClick={onBack} className="p-2 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-violet-500/30 text-gray-500 hover:text-violet-600 transition-all shadow-sm">
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div>
+                        <div className="text-xs text-violet-600 dark:text-violet-400 uppercase tracking-wider font-bold flex items-center gap-1.5"><Trophy className="w-3 h-3" /> Exam Results</div>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{examCourse.course_name}</h3>
+                    </div>
+                </div>
+
+                {/* Student's Score Card */}
+                {myResult ? (
+                    <div className="bg-gradient-to-br from-violet-50 via-white to-purple-50 dark:from-violet-900/20 dark:via-[#1A1F2E] dark:to-purple-900/20 rounded-3xl border border-violet-200 dark:border-violet-500/20 p-8 shadow-lg">
+                        <div className="text-xs text-violet-500 uppercase font-bold tracking-wider mb-4">Your Performance</div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            {/* Score */}
+                            <div className="text-center">
+                                <div className="text-4xl font-black bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                                    {myResult.total_marks}
+                                </div>
+                                <div className="text-xs text-gray-500 font-bold uppercase mt-1">Total Marks</div>
+                            </div>
+                            {/* Rank */}
+                            <div className="text-center">
+                                <div className={`text-4xl font-black ${rank <= 3 ? 'bg-gradient-to-r from-amber-500 to-yellow-500 bg-clip-text text-transparent' : 'text-gray-700 dark:text-gray-200'}`}>
+                                    #{rank}
+                                </div>
+                                <div className="text-xs text-gray-500 font-bold uppercase mt-1">of {totalParticipants}</div>
+                            </div>
+                            {/* Coding */}
+                            <div className="text-center">
+                                <div className="text-3xl font-black text-cyan-600 dark:text-cyan-400">
+                                    {myResult.marks_breakdown?.coding_marks || 0}
+                                </div>
+                                <div className="text-xs text-gray-500 font-bold uppercase mt-1">Coding</div>
+                            </div>
+                            {/* MCQ */}
+                            <div className="text-center">
+                                <div className="text-3xl font-black text-violet-600 dark:text-violet-400">
+                                    {myResult.marks_breakdown?.mcq_marks || 0}
+                                </div>
+                                <div className="text-xs text-gray-500 font-bold uppercase mt-1">MCQ</div>
+                            </div>
+                        </div>
+                        {/* Completion */}
+                        <div className="mt-6 flex items-center gap-4">
+                            <div className="flex-1 h-2 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full transition-all duration-700 ${myResult.exam_completion_percentage === 100 ? 'bg-emerald-500' : 'bg-violet-500'}`} style={{ width: `${myResult.exam_completion_percentage || 0}%` }} />
+                            </div>
+                            <span className={`text-sm font-bold ${myResult.exam_completion_percentage === 100 ? 'text-emerald-600' : 'text-violet-600'}`}>
+                                {myResult.exam_completion_percentage || 0}% Complete
+                            </span>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="bg-white dark:bg-[#1A1F2E] rounded-2xl p-8 text-center text-gray-400 border border-gray-200 dark:border-white/5">
+                        <AlertCircle className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                        No exam data available for this student
+                    </div>
+                )}
+
+                {/* Section Leaderboard */}
+                {leaderboard.length > 0 && (
+                    <div className="bg-white dark:bg-[#1A1F2E] rounded-3xl border border-gray-200 dark:border-white/5 overflow-hidden shadow-lg">
+                        <div className="p-5 border-b border-gray-200 dark:border-white/5 flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <Trophy className="w-4 h-4 text-amber-500" />
+                                Section Leaderboard
+                                <span className="text-xs font-normal text-gray-400 bg-gray-100 dark:bg-white/5 px-2 py-0.5 rounded-md">{leaderboard.length} participants</span>
+                            </h4>
+                        </div>
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-gray-50 dark:bg-black/20 border-b border-gray-200 dark:border-white/5">
+                                <tr>
+                                    <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Rank</th>
+                                    <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
+                                    <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Total</th>
+                                    <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Coding</th>
+                                    <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">MCQ</th>
+                                    <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                                {leaderboard.map((s, i) => {
+                                    const isMe = s.uni_reg_id === studentRegId;
+                                    const maxMarks = leaderboard[0]?.total_marks || 1;
+                                    return (
+                                        <tr key={s.uni_reg_id || i}
+                                            onClick={() => {
+                                                if (!isMe && onStudentSelect && s.student_name) {
+                                                    onStudentSelect(s);
+                                                }
+                                            }}
+                                            className={`transition-colors ${!isMe && onStudentSelect && s.student_name ? 'cursor-pointer' : ''} ${isMe ? 'bg-violet-50 dark:bg-violet-500/10 ring-1 ring-violet-400/30' : 'hover:bg-gray-50 dark:hover:bg-white/5'}`}
+                                        >
+                                            <td className="p-4 text-center">
+                                                {s.rank === 1 ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-black shadow"><Trophy className="w-3 h-3" /> 1st</span>
+                                                    : s.rank === 2 ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-gray-300 to-gray-400 text-gray-800 text-xs font-black"><Medal className="w-3 h-3" /> 2nd</span>
+                                                        : s.rank === 3 ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-600 to-amber-700 text-white text-xs font-black"><Medal className="w-3 h-3" /> 3rd</span>
+                                                            : <span className="text-sm font-bold text-gray-400">#{s.rank}</span>}
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`font-bold text-sm ${isMe ? 'text-violet-700 dark:text-violet-300' : 'text-gray-700 dark:text-gray-200'}`}>
+                                                        {s.student_name || 'Not Registered'}
+                                                    </span>
+                                                    {isMe && <span className="px-1.5 py-0.5 rounded text-[9px] font-black bg-violet-500 text-white uppercase">You</span>}
+                                                </div>
+                                                <div className="text-[10px] text-gray-400 font-mono">{s.uni_reg_id}</div>
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <span className={`text-base font-black ${isMe ? 'text-violet-600 dark:text-violet-400' : 'text-gray-900 dark:text-white'}`}>{s.total_marks || 0}</span>
+                                                    <div className="h-1 w-12 bg-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-violet-500 rounded-full" style={{ width: `${Math.round(((s.total_marks || 0) / maxMarks) * 100)}%` }} />
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="p-4 text-center text-sm font-bold text-cyan-600 dark:text-cyan-400">{s.marks_breakdown?.coding_marks || 0}</td>
+                                            <td className="p-4 text-center text-sm font-bold text-violet-600 dark:text-violet-400">{s.marks_breakdown?.mcq_marks || 0}</td>
+                                            <td className="p-4 text-center">
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${s.exam_completion_percentage === 100 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' : s.exam_completion_percentage > 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-300' : 'bg-gray-100 text-gray-400 dark:bg-white/10'}`}>
+                                                    {s.exam_completion_percentage || 0}%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

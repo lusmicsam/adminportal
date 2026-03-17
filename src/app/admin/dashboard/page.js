@@ -355,7 +355,7 @@ export default function DeepDiveDashboard() {
 
     // RENDER: Student Detail View Overhead
     if (inspectingStudent) {
-        return <StudentDetailView student={inspectingStudent} onBack={() => setInspectingStudent(null)} />;
+        return <StudentDetailView student={inspectingStudent} onBack={() => setInspectingStudent(null)} onStudentSelect={setInspectingStudent} />;
     }
 
     return (
@@ -390,6 +390,7 @@ export default function DeepDiveDashboard() {
                 <StudentDetailView
                     student={inspectingStudent}
                     onBack={() => setInspectingStudent(null)}
+                    onStudentSelect={setInspectingStudent}
                 />
             )}
 
@@ -1026,6 +1027,7 @@ export default function DeepDiveDashboard() {
                     <StudentDetailView
                         student={inspectingStudent}
                         onBack={() => setInspectingStudent(null)}
+                        onStudentSelect={setInspectingStudent}
                     />
                 )}
             </div>

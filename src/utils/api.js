@@ -21,6 +21,7 @@ export const API_CONFIG = {
         getSectionsByBatch: '/api/university/admin/get-sections-by-batch',
 
         getPracticeCoursesByBatch: '/api/university/admin/get-practice-courses-by-batch',
+        getExamCoursesByBatch: '/api/university/admin/get-exam-courses-by-batch',
         examDetails: '/api/auth/teacher/teacher/analytics/section-exam-progress',
         checkDetails: '/api/university/admin/check-details',
         updateDetails: '/api/university/admin/update-details',
