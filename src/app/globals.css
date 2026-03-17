@@ -450,7 +450,7 @@ html.dark body {
 
 .custom-scrollbar-dark::-webkit-scrollbar {
   width: 8px;
-  height: 8px;
+  height:  8px;
 }
 .custom-scrollbar-dark::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
