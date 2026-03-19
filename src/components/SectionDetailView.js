@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, BookOpen, Users, TrendingUp, AlertCircle, Search, ArrowUpDown, UserX, UserCheck, Loader2, Trophy, Medal, Timer, Clock, Hash, ChevronDown, ChevronUp, Award, Download } from 'lucide-react';
+import { ArrowLeft, BookOpen, Users, TrendingUp, AlertCircle, Search, ArrowUpDown, UserX, UserCheck, Loader2, Trophy, Medal, Timer, Clock, Hash, ChevronDown, ChevronUp, Award, Download, Eye, EyeOff, Wifi, WifiOff, ShieldAlert, MousePointerClick, Activity } from 'lucide-react';
 import { CircularProgress } from './CircularProgress';
 import { Skeleton, SectionDetailSkeleton } from './Skeletons';
 import { API_CONFIG } from '../utils/api';
@@ -287,10 +287,102 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
     const [exportProgress, setExportProgress] = useState(0);
     const [isExportingAllTests, setIsExportingAllTests] = useState(false);
 
+    // Export Config Modal State
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [courseStructures, setCourseStructures] = useState({});
+    const [loadingStructures, setLoadingStructures] = useState(false);
+    const [exportConfig, setExportConfig] = useState({
+        selectedUnits: new Set(),
+        includeOverall: true,
+        includeMCQ: true,
+        includeCoding: true
+    });
+
+    const fetchCourseStructures = async () => {
+        setLoadingStructures(true);
+        try {
+            const structures = {};
+            const allUnitKeys = new Set();
+            const token = getAdminToken();
+
+            await Promise.all(regularCourses.map(async (course) => {
+                try {
+                    const headers = {};
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+                    const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.courseStructure(course.course_id)}`, {
+                        credentials: 'include',
+                        headers
+                    });
+                    const json = await res.json();
+                    const units = json.data || [];
+                    structures[course.course_id] = {
+                        name: course.course_name,
+                        units: units.map(u => ({
+                            unit_id: u.unit_id,
+                            unit_name: u.unit_name || u.unit_title || 'Unit',
+                            unit_title: u.unit_title || u.unit_name || null
+                        }))
+                    };
+                    units.forEach(u => allUnitKeys.add(`${course.course_id}-${u.unit_id}`));
+                } catch (e) {
+                    console.error(`Failed to fetch structure for course ${course.course_id}`, e);
+                }
+            }));
+
+            setCourseStructures(structures);
+            setExportConfig(prev => ({ ...prev, selectedUnits: allUnitKeys }));
+        } catch (e) {
+            console.error('Failed to fetch course structures', e);
+        } finally {
+            setLoadingStructures(false);
+        }
+    };
+
+    const handleOpenExport = () => {
+        setShowExportModal(true);
+        if (Object.keys(courseStructures).length === 0) {
+            fetchCourseStructures();
+        }
+    };
+
+    const toggleExportUnit = (key) => {
+        setExportConfig(prev => {
+            const next = new Set(prev.selectedUnits);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return { ...prev, selectedUnits: next };
+        });
+    };
+
+    const toggleAllUnitsForCourse = (courseId, selectAll) => {
+        setExportConfig(prev => {
+            const next = new Set(prev.selectedUnits);
+            const units = courseStructures[courseId]?.units || [];
+            units.forEach(u => {
+                const key = `${courseId}-${u.unit_id}`;
+                if (selectAll) next.add(key);
+                else next.delete(key);
+            });
+            return { ...prev, selectedUnits: next };
+        });
+    };
+
     const handleExport = async () => {
         if (!data) return;
+        setShowExportModal(false);
         setIsExporting(true);
         setExportProgress(0);
+
+        const { selectedUnits, includeOverall, includeMCQ, includeCoding } = exportConfig;
+
+        // Helper: normalize score values
+        const normalizeVal = (v) => {
+            if (v === true) return 100;
+            if (v === false) return 0;
+            if (typeof v === 'number') return Math.round(v);
+            const parsed = parseInt(v);
+            return isNaN(parsed) ? 0 : parsed;
+        };
 
         try {
             const XLSX = await import('xlsx');
@@ -299,40 +391,46 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
             let processedCount = 0;
 
             const exportRows = [];
-            const CONCURRENT_LIMIT = 5;
+            const BATCH_SIZE = 5;
 
-            for (let i = 0; i < allStudents.length; i += CONCURRENT_LIMIT) {
-                const batch = allStudents.slice(i, i + CONCURRENT_LIMIT);
+            // Pre-compute selected courses from already-fetched courseStructures
+            const selectedCourses = Object.entries(courseStructures).filter(([cId, cData]) => {
+                return cData.units.some(u => selectedUnits.has(`${cId}-${u.unit_id}`));
+            });
 
-                await Promise.all(batch.map(async (student) => {
+            const token = getAdminToken();
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            for (let i = 0; i < totalStudents; i += BATCH_SIZE) {
+                const chunk = allStudents.slice(i, i + BATCH_SIZE);
+
+                await Promise.all(chunk.map(async (student) => {
                     const isRegistered = isStudentRegistered(student);
 
                     const row = {
-                        'Student Name': student.student_name || 'Not Registered',
+                        'Name': student.student_name || 'Not Registered',
                         'Reg ID': student.uni_reg_id,
-                        'Section': data.section_metadata?.section_name || '',
-                        'Registration Status': isRegistered ? 'Registered' : 'Not Registered'
+                        'Overall Completion %': 0
                     };
 
-                    // Add loaded progress data if available (only for registered students)
+                    // Calculate overall from progressData
                     if (progressLoaded && isRegistered) {
+                        let totalProg = 0, count = 0;
                         regularCourses.forEach(course => {
-                            const courseProgress = progressData[course.course_id];
-                            const studentProgress = courseProgress?.[student.student_name] ?? 'N/A';
-                            row[`${course.course_name} - Progress (%)`] = studentProgress;
+                            const p = progressData[course.course_id]?.[student.student_name];
+                            if (typeof p === 'number') { totalProg += p; count++; }
                         });
-                    } else if (progressLoaded) {
-                        regularCourses.forEach(course => {
-                            row[`${course.course_name} - Progress (%)`] = 'Not Registered';
-                        });
+                        row['Overall Completion %'] = count > 0 ? Math.round(totalProg / count) : 0;
                     }
 
                     // Only fetch detailed data for registered students
                     if (isRegistered) {
                         try {
+                            // 1. Get full student details to find student_id / UUID
                             const lookupRes = await fetch(`${API_CONFIG.baseUrl.student}${API_CONFIG.student.lookup}`, {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers,
                                 body: JSON.stringify({
                                     type: 'uni_reg_id',
                                     value: student.uni_reg_id,
@@ -345,73 +443,84 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
 
                             if (fullStudent) {
                                 const studentId = fullStudent.student_id || fullStudent.uuid || fullStudent.id;
-                                const batchId = fullStudent.batch_id || fullStudent.batch;
 
-                                if (batchId) {
-                                    const coursesRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.getPracticeCoursesByBatch}`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ batch_id: batchId }),
-                                        credentials: 'include'
-                                    });
-                                    const coursesJson = await coursesRes.json();
-                                    let studentCourses = [];
-                                    if (coursesJson.success && coursesJson.data) {
-                                        if (Array.isArray(coursesJson.data)) studentCourses = coursesJson.data;
-                                        else if (coursesJson.data.courses) studentCourses = coursesJson.data.courses;
-                                    }
+                                // 2. Iterate selected courses/units (using pre-fetched courseStructures)
+                                for (const [courseId, courseData] of selectedCourses) {
+                                    const courseUnits = courseData.units.filter(u => selectedUnits.has(`${courseId}-${u.unit_id}`));
 
-                                    for (const sectionCourse of regularCourses) {
-                                        const enrolled = studentCourses.find(sc => sc.course_id === sectionCourse.course_id);
-                                        if (enrolled) {
-                                            const structRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.courseStructure(sectionCourse.course_id)}`, { credentials: 'include' });
-                                            const structJson = await structRes.json();
-                                            const units = structJson.data || [];
+                                    for (const unit of courseUnits) {
+                                        const unitName = `Unit ${courseData.units.findIndex(u => u.unit_id === unit.unit_id) + 1}`;
 
-                                            let courseTotalComp = 0;
+                                        try {
+                                            const compRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.unitCompletion}`, {
+                                                method: 'POST',
+                                                headers,
+                                                body: JSON.stringify({
+                                                    student_id: studentId,
+                                                    course_id: courseId,
+                                                    unit_id: unit.unit_id
+                                                }),
+                                                credentials: 'include'
+                                            });
+                                            const compJson = await compRes.json();
 
-                                            if (units.length > 0) {
-                                                const token = getAdminToken();
-                                                const headers = { 'Content-Type': 'application/json' };
-                                                if (token) headers['Authorization'] = `Bearer ${token}`;
+                                            if (compJson.success && compJson.data) {
+                                                const d = compJson.data;
 
-                                                await Promise.all(units.map(async (unit) => {
-                                                    try {
-                                                        const cwRes = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.unitCompletion}`, {
-                                                            method: 'POST',
-                                                            headers,
-                                                            body: JSON.stringify({
-                                                                student_id: studentId,
-                                                                course_id: sectionCourse.course_id,
-                                                                unit_id: unit.unit_id
-                                                            }),
-                                                            credentials: 'include'
-                                                        });
-                                                        const cwJson = await cwRes.json();
-                                                        const unitVal = cwJson.success && cwJson.data ? (cwJson.data.overall_unit_completion || 0) : 0;
+                                                // Overall completion for this unit
+                                                if (includeOverall) {
+                                                    const val = d.overall_unit_completion ?? d.completion_percentage ?? 0;
+                                                    row[`${courseData.name} - ${unitName} (%)`] = normalizeVal(val);
+                                                }
 
-                                                        row[`${sectionCourse.course_name} - ${unit.unit_title || unit.unit_name || 'Unit'} (%)`] = unitVal;
-                                                        courseTotalComp += unitVal;
+                                                // Calculate MCQ/Coding using submitted count (matching teacher module)
+                                                let mcqVal = 0;
+                                                let codingVal = 0;
 
-                                                        if (cwJson.data && Array.isArray(cwJson.data.sub_unit_breakdown)) {
-                                                            cwJson.data.sub_unit_breakdown.forEach((sub, subIndex) => {
-                                                                const colName = `${sectionCourse.course_name} - ${unit.unit_title || unit.unit_name} - Subunit ${subIndex + 1} (%)`;
-                                                                row[colName] = sub.progress_percentage || 0;
-                                                            });
+                                                if (Array.isArray(d.sub_unit_breakdown)) {
+                                                    let mcqTotal = 0, mcqSubmitted = 0;
+                                                    let codingTotal = 0, codingSubmitted = 0;
+
+                                                    d.sub_unit_breakdown.forEach(sub => {
+                                                        const details = sub.details || {};
+
+                                                        // MCQ: count submitted vs total
+                                                        if (details.has_mcq) {
+                                                            mcqTotal++;
+                                                            if (details.mcq_submitted) mcqSubmitted++;
                                                         }
 
-                                                    } catch (e) {
-                                                        row[`${sectionCourse.course_name} - ${unit.unit_title || 'Unit'} (%)`] = 0;
-                                                    }
-                                                }));
+                                                        // Coding: count submitted vs total
+                                                        if (details.has_coding) {
+                                                            codingTotal++;
+                                                            if (details.coding_submitted) codingSubmitted++;
+                                                        }
+                                                    });
 
-                                                const avgCourse = Math.round(courseTotalComp / units.length);
-                                                row[`${sectionCourse.course_name} - Overall (%)`] = avgCourse;
+                                                    mcqVal = mcqTotal > 0 ? (mcqSubmitted / mcqTotal) * 100 : 0;
+                                                    codingVal = codingTotal > 0 ? (codingSubmitted / codingTotal) * 100 : 0;
+                                                } else {
+                                                    // Fallback to direct values
+                                                    mcqVal = d.mcq_score ?? d.mcq_completion ?? d.mcq_percentage ?? 0;
+                                                    codingVal = d.coding_score ?? d.coding_completion ?? d.coding_percentage ?? 0;
+                                                }
+
+                                                if (includeMCQ) {
+                                                    row[`${courseData.name} - ${unitName} (MCQ %)`] = normalizeVal(mcqVal);
+                                                }
+                                                if (includeCoding) {
+                                                    row[`${courseData.name} - ${unitName} (Coding %)`] = normalizeVal(codingVal);
+                                                }
                                             } else {
-                                                row[`${sectionCourse.course_name} - Overall (%)`] = 0;
+                                                if (includeOverall) row[`${courseData.name} - ${unitName} (%)`] = 0;
+                                                if (includeMCQ) row[`${courseData.name} - ${unitName} (MCQ %)`] = 0;
+                                                if (includeCoding) row[`${courseData.name} - ${unitName} (Coding %)`] = 0;
                                             }
-                                        } else {
-                                            row[`${sectionCourse.course_name} - Overall (%)`] = 'N/A';
+                                        } catch (e) {
+                                            // On error, set 0
+                                            if (includeOverall) row[`${courseData.name} - ${unitName} (%)`] = 0;
+                                            if (includeMCQ) row[`${courseData.name} - ${unitName} (MCQ %)`] = 0;
+                                            if (includeCoding) row[`${courseData.name} - ${unitName} (Coding %)`] = 0;
                                         }
                                     }
                                 }
@@ -421,37 +530,23 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         }
                     }
 
-                    // Add exam data if available
-                    if (data.course_performance) {
-                        data.course_performance.forEach(c => {
-                            if (examDataMap[c.course_id]) {
-                                const examData = examDataMap[c.course_id];
-                                const examStudent = examData?.students?.find(es => es.uni_reg_id === student.uni_reg_id);
-                                row[`${c.course_name} - Score`] = examStudent ? examStudent.total_marks : '-';
-                                row[`${c.course_name} - Status`] = examStudent ? `${examStudent.exam_completion_percentage}%` : '-';
-                            }
-                        });
-                    }
-
                     exportRows.push(row);
                 }));
 
-                processedCount += batch.length;
+                processedCount += chunk.length;
                 setExportProgress(Math.round((processedCount / totalStudents) * 100));
             }
 
+            // Generate Excel
             const wb = XLSX.utils.book_new();
             const ws = XLSX.utils.json_to_sheet(exportRows);
 
-            const colWidths = Object.keys(exportRows[0] || {}).map(key => ({ wch: Math.max(key.length + 2, 12) }));
+            // Auto-width columns
+            const colWidths = Object.keys(exportRows[0] || {}).map(key => ({ wch: Math.max(key.length, 10) }));
             ws['!cols'] = colWidths;
 
-            XLSX.utils.book_append_sheet(wb, ws, "Section Report");
-
-            const date = new Date().toISOString().split('T')[0];
-            const fileName = `${data.section_metadata?.section_name}_Detailed_Report_${date}.xlsx`;
-
-            XLSX.writeFile(wb, fileName);
+            XLSX.utils.book_append_sheet(wb, ws, "Detailed Report");
+            XLSX.writeFile(wb, `${data.section_metadata?.section_name || 'Section'}_Detailed_Report.xlsx`);
 
         } catch (e) {
             console.error("Export Failed", e);
@@ -534,6 +629,7 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         const diff = (new Date(endTime).getTime() - new Date(startTime).getTime()) / 60000;
                         if (diff > 0) duration = Math.round(diff);
                     }
+                    const an = s.analytics || {};
                     return {
                         'Rank': currentRank,
                         'Student Name': s.student_name || 'Not Registered',
@@ -543,6 +639,23 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         'Coding Marks': s.marks_breakdown?.coding_marks || 0,
                         'MCQ Marks': s.marks_breakdown?.mcq_marks || 0,
                         'Duration (mins)': duration || '-',
+                        // ── Analytics ──
+                        'Started At': an.startedAt ? new Date(an.startedAt).toLocaleString() : '-',
+                        'Last Updated At': an.lastUpdatedAt ? new Date(an.lastUpdatedAt).toLocaleString() : '-',
+                        'Starting IP': an.startingIp || '-',
+                        'Ending IP': an.endingIp || '-',
+                        'Lost Focus': an.lostFocusCount ?? '-',
+                        'Regained Focus': an.regainedFocusCount ?? '-',
+                        'Face Warnings': an.faceWarnings ?? '-',
+                        'Face Warnings Max': an.faceWarningsMax ?? '-',
+                        'Internet Disconnects': an.internetDisconnects ?? '-',
+                        'Offline Seconds': an.internetOfflineSeconds ?? '-',
+                        'Blocked by Proctor': an.blockedByProctorCount ?? '-',
+                        'Blocked Seconds': an.blockedSeconds ?? '-',
+                        'Compile Clicks': an.compileClicks ?? '-',
+                        'Submit Clicks': an.submitClicks ?? '-',
+                        'Continue Clicks': an.continueClicks ?? '-',
+                        'Submit Reason': an.submitReason || '-',
                         // ── Start Config ──
                         'Start Timestamp': startTime ? new Date(startTime).toLocaleString() : '-',
                         'Start Captured At': sc.capturedAt ? new Date(sc.capturedAt).toLocaleString() : '-',
@@ -665,7 +778,7 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                         <span>Tests {examCourses.length > 0 ? `(${examCourses.length})` : ''}</span>
                     </button>
                     <button
-                        onClick={handleExport}
+                        onClick={handleOpenExport}
                         disabled={isExporting || loadingProgress}
                         className="group flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5 active:translate-y-0"
                     >
@@ -1103,6 +1216,163 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                     </>
                 )}
             </div>
+
+            {/* ──── Export Configuration Modal ──── */}
+            {showExportModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-2xl max-h-[85vh] mx-4 bg-white dark:bg-[#0f1523] rounded-3xl border border-gray-200 dark:border-white/10 shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-200 dark:border-white/5">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
+                                    <Download className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-extrabold text-gray-900 dark:text-white">Export Configuration</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Select units and metrics to include in your Excel report</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowExportModal(false)}
+                                className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10 transition-all"
+                            >
+                                <span className="text-2xl leading-none">&times;</span>
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                            {/* Metrics Toggle Section */}
+                            <div className="p-5 rounded-2xl bg-gray-50 dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5">
+                                <h4 className="text-xs font-extrabold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-4">Include Metrics</h4>
+                                <div className="flex flex-wrap items-center gap-6">
+                                    {[
+                                        { key: 'includeOverall', label: 'Overall Completion' },
+                                        { key: 'includeMCQ', label: 'MCQ Scores' },
+                                        { key: 'includeCoding', label: 'Coding Scores' }
+                                    ].map(metric => (
+                                        <label key={metric.key} className="flex items-center gap-2.5 cursor-pointer group">
+                                            <div
+                                                onClick={() => setExportConfig(prev => ({ ...prev, [metric.key]: !prev[metric.key] }))}
+                                                className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 cursor-pointer
+                                                    ${exportConfig[metric.key]
+                                                        ? 'bg-cyan-500 border-cyan-500 shadow-md shadow-cyan-500/30'
+                                                        : 'border-gray-300 dark:border-gray-600 hover:border-cyan-400'
+                                                    }`}
+                                            >
+                                                {exportConfig[metric.key] && (
+                                                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">{metric.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Course & Unit Selection */}
+                            <div>
+                                <h4 className="text-xs font-extrabold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-4">Select Courses & Units</h4>
+
+                                {loadingStructures ? (
+                                    <div className="flex items-center justify-center gap-3 p-8 text-gray-400">
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        <span className="text-sm font-medium">Loading course structures...</span>
+                                    </div>
+                                ) : Object.keys(courseStructures).length === 0 ? (
+                                    <div className="text-center p-8 text-gray-400 text-sm">
+                                        No courses available to configure.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {Object.entries(courseStructures).map(([courseId, courseData]) => {
+                                            const allSelected = courseData.units.every(u => exportConfig.selectedUnits.has(`${courseId}-${u.unit_id}`));
+                                            const noneSelected = courseData.units.every(u => !exportConfig.selectedUnits.has(`${courseId}-${u.unit_id}`));
+
+                                            return (
+                                                <div key={courseId} className="p-5 rounded-2xl bg-gray-50 dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <h5 className="font-bold text-gray-900 dark:text-white text-sm">{courseData.name}</h5>
+                                                        <div className="flex items-center gap-3 text-xs font-bold">
+                                                            <button
+                                                                onClick={() => toggleAllUnitsForCourse(courseId, true)}
+                                                                className={`transition-colors ${allSelected ? 'text-cyan-500' : 'text-gray-400 hover:text-cyan-500'}`}
+                                                            >
+                                                                Select All
+                                                            </button>
+                                                            <button
+                                                                onClick={() => toggleAllUnitsForCourse(courseId, false)}
+                                                                className={`transition-colors ${noneSelected ? 'text-gray-500' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                                                            >
+                                                                None
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {courseData.units.map((unit, idx) => {
+                                                            const key = `${courseId}-${unit.unit_id}`;
+                                                            const isSelected = exportConfig.selectedUnits.has(key);
+                                                            return (
+                                                                <button
+                                                                    key={key}
+                                                                    onClick={() => toggleExportUnit(key)}
+                                                                    className={`flex items-center gap-2.5 p-3 rounded-xl text-sm font-semibold text-left transition-all duration-200
+                                                                        ${isSelected
+                                                                            ? 'bg-cyan-500/10 border-2 border-cyan-500/50 text-cyan-700 dark:text-cyan-300 shadow-sm'
+                                                                            : 'bg-white dark:bg-white/5 border-2 border-gray-200 dark:border-white/5 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-white/10'
+                                                                        }`}
+                                                                >
+                                                                    <div className={`w-4.5 h-4.5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all
+                                                                        ${isSelected
+                                                                            ? 'bg-cyan-500 border-cyan-500 shadow-sm shadow-cyan-500/30'
+                                                                            : 'border-gray-300 dark:border-gray-600'
+                                                                        }`}
+                                                                    >
+                                                                        {isSelected && (
+                                                                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                                            </svg>
+                                                                        )}
+                                                                    </div>
+                                                                    {`Unit ${idx + 1}`}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div className="p-6 pt-4 border-t border-gray-200 dark:border-white/5 flex items-center justify-between">
+                            <div className="text-xs text-gray-400">
+                                {exportConfig.selectedUnits.size} unit{exportConfig.selectedUnits.size !== 1 ? 's' : ''} selected
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => setShowExportModal(false)}
+                                    className="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleExport}
+                                    disabled={exportConfig.selectedUnits.size === 0 || (!exportConfig.includeOverall && !exportConfig.includeMCQ && !exportConfig.includeCoding)}
+                                    className="px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
+                                >
+                                    Export Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -1111,6 +1381,7 @@ function TestDetailOverlay({ test, students, sectionMetadata, onClose, isInline 
     const examStudents = test?.students || [];
     const [searchQuery, setSearchQuery] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: 'rank', direction: 'asc' });
+    const [expandedStudent, setExpandedStudent] = useState(null);
 
     // ─── Ranking Logic ───────────────────────────────────────────────────────
     const rankedStudents = React.useMemo(() => {
@@ -1242,6 +1513,7 @@ function TestDetailOverlay({ test, students, sectionMetadata, onClose, isInline 
             const exportData = displayStudents.map(s => {
                 const sc = s.debug_configs?.start_config || {};
                 const ec = s.debug_configs?.end_config || {};
+                const an = s.analytics || {};
 
                 return {
                     'Rank': s.rank,
@@ -1252,6 +1524,23 @@ function TestDetailOverlay({ test, students, sectionMetadata, onClose, isInline 
                     'Coding Marks': s.coding_marks,
                     'MCQ Marks': s.mcq_marks,
                     'Duration (mins)': s.duration || '-',
+                    // ── Analytics ──
+                    'Started At': an.startedAt ? new Date(an.startedAt).toLocaleString() : '-',
+                    'Last Updated At': an.lastUpdatedAt ? new Date(an.lastUpdatedAt).toLocaleString() : '-',
+                    'Starting IP': an.startingIp || '-',
+                    'Ending IP': an.endingIp || '-',
+                    'Lost Focus': an.lostFocusCount ?? '-',
+                    'Regained Focus': an.regainedFocusCount ?? '-',
+                    'Face Warnings': an.faceWarnings ?? '-',
+                    'Face Warnings Max': an.faceWarningsMax ?? '-',
+                    'Internet Disconnects': an.internetDisconnects ?? '-',
+                    'Offline Seconds': an.internetOfflineSeconds ?? '-',
+                    'Blocked by Proctor': an.blockedByProctorCount ?? '-',
+                    'Blocked Seconds': an.blockedSeconds ?? '-',
+                    'Compile Clicks': an.compileClicks ?? '-',
+                    'Submit Clicks': an.submitClicks ?? '-',
+                    'Continue Clicks': an.continueClicks ?? '-',
+                    'Submit Reason': an.submitReason || '-',
                     // ── Start Config ──
                     'Start Timestamp': sc.timestamp ? new Date(sc.timestamp).toLocaleString() : '-',
                     'Start Captured At': sc.capturedAt ? new Date(sc.capturedAt).toLocaleString() : '-',
@@ -1404,13 +1693,13 @@ function TestDetailOverlay({ test, students, sectionMetadata, onClose, isInline 
                                     const mcqMax = Math.max(...rankedStudents.map(s => s.mcq_marks), 1);
 
                                     return (
-                                        <tr key={student.uni_reg_id || i}
-                                            onClick={() => {
-                                                if (onStudentSelect && student.student_name) {
-                                                    onStudentSelect(student);
-                                                }
+                                        <React.Fragment key={student.uni_reg_id || i}>
+                                        <tr
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setExpandedStudent(prev => prev === student.uni_reg_id ? null : student.uni_reg_id);
                                             }}
-                                            className={`transition-colors ${onStudentSelect && student.student_name ? 'cursor-pointer' : ''} ${!isRegistered ? 'opacity-50' : ''} ${student.rank <= 3 ? 'bg-gradient-to-r from-amber-50/30 dark:from-amber-500/5 to-transparent' : ''} hover:bg-violet-50/50 dark:hover:bg-violet-500/5`}
+                                            className={`transition-colors cursor-pointer ${!isRegistered ? 'opacity-50' : ''} ${student.rank <= 3 ? 'bg-gradient-to-r from-amber-50/30 dark:from-amber-500/5 to-transparent' : ''} hover:bg-violet-50/50 dark:hover:bg-violet-500/5 ${expandedStudent === student.uni_reg_id ? 'bg-violet-50/40 dark:bg-violet-500/10' : ''}`}
                                         >
                                             {/* Rank */}
                                             <td className="p-4 text-center">
@@ -1423,7 +1712,14 @@ function TestDetailOverlay({ test, students, sectionMetadata, onClose, isInline 
                                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${student.rank === 1 ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg shadow-amber-500/30' : student.rank <= 3 ? 'bg-gradient-to-br from-violet-400 to-purple-500 text-white' : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300'}`}>
                                                             {student.student_name[0]?.toUpperCase() || 'S'}
                                                         </div>
-                                                        <span className={`font-bold ${student.rank <= 3 ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200'}`}>{student.student_name}</span>
+                                                        <div className="flex flex-col">
+                                                            <span className={`font-bold ${student.rank <= 3 ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-200'}`}>{student.student_name}</span>
+                                                            {student.analytics && (
+                                                                <span className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+                                                                    <Activity className="w-2.5 h-2.5" /> Analytics available
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center gap-2">
@@ -1495,6 +1791,137 @@ function TestDetailOverlay({ test, students, sectionMetadata, onClose, isInline 
                                                 </span>
                                             </td>
                                         </tr>
+                                        {/* ── Expandable Analytics Row ── */}
+                                        {expandedStudent === student.uni_reg_id && student.analytics && (
+                                            <tr className="bg-gradient-to-r from-violet-50/60 via-purple-50/30 to-transparent dark:from-violet-500/10 dark:via-purple-500/5 dark:to-transparent">
+                                                <td colSpan={9} className="p-0">
+                                                    <div className="px-6 py-5 animate-in slide-in-from-top-2 duration-200">
+                                                        <div className="flex items-center gap-2 mb-4">
+                                                            <Activity className="w-4 h-4 text-violet-500" />
+                                                            <span className="text-xs font-extrabold uppercase tracking-widest text-violet-600 dark:text-violet-400">Exam Analytics</span>
+                                                            <span className="text-[10px] text-gray-400 ml-2">— {student.student_name}</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                                            {/* IP Tracking */}
+                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Starting IP</div>
+                                                                <div className="text-sm font-bold text-gray-800 dark:text-gray-200 font-mono">{student.analytics.startingIp || '-'}</div>
+                                                            </div>
+                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Ending IP</div>
+                                                                <div className={`text-sm font-bold font-mono ${student.analytics.startingIp && student.analytics.endingIp && student.analytics.startingIp !== student.analytics.endingIp ? 'text-red-500' : 'text-gray-800 dark:text-gray-200'}`}>
+                                                                    {student.analytics.endingIp || '-'}
+                                                                    {student.analytics.startingIp && student.analytics.endingIp && student.analytics.startingIp !== student.analytics.endingIp && (
+                                                                        <span className="ml-1 text-[9px] text-red-400 font-sans">⚠ Changed</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            {/* Focus */}
+                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><EyeOff className="w-3 h-3" /> Lost Focus</div>
+                                                                <div className={`text-lg font-black ${(student.analytics.lostFocusCount || 0) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{student.analytics.lostFocusCount ?? 0}</div>
+                                                            </div>
+                                                            {/* Face Warnings */}
+                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><ShieldAlert className="w-3 h-3" /> Face Warnings</div>
+                                                                <div className={`text-lg font-black ${(student.analytics.faceWarnings || 0) > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                                                                    {student.analytics.faceWarnings ?? 0}
+                                                                    <span className="text-xs font-medium text-gray-400">/{student.analytics.faceWarningsMax ?? '?'}</span>
+                                                                </div>
+                                                            </div>
+                                                            {/* Internet */}
+                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><WifiOff className="w-3 h-3" /> Disconnects</div>
+                                                                <div className={`text-lg font-black ${(student.analytics.internetDisconnects || 0) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{student.analytics.internetDisconnects ?? 0}</div>
+                                                                {(student.analytics.internetOfflineSeconds || 0) > 0 && (
+                                                                    <div className="text-[10px] text-gray-400 mt-0.5">{student.analytics.internetOfflineSeconds}s offline</div>
+                                                                )}
+                                                            </div>
+                                                            {/* Blocked */}
+                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Blocked by Proctor</div>
+                                                                <div className={`text-lg font-black ${(student.analytics.blockedByProctorCount || 0) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{student.analytics.blockedByProctorCount ?? 0}</div>
+                                                                {(student.analytics.blockedSeconds || 0) > 0 && (
+                                                                    <div className="text-[10px] text-gray-400 mt-0.5">{student.analytics.blockedSeconds}s blocked</div>
+                                                                )}
+                                                            </div>
+                                                            {/* Compile Clicks */}
+                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><MousePointerClick className="w-3 h-3" /> Compile Clicks</div>
+                                                                <div className="text-lg font-black text-cyan-600 dark:text-cyan-400">{student.analytics.compileClicks ?? 0}</div>
+                                                            </div>
+                                                            {/* Submit Clicks */}
+                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><MousePointerClick className="w-3 h-3" /> Submit Clicks</div>
+                                                                <div className="text-lg font-black text-violet-600 dark:text-violet-400">{student.analytics.submitClicks ?? 0}</div>
+                                                            </div>
+                                                            {/* Continue Clicks */}
+                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Continue Clicks</div>
+                                                                <div className="text-lg font-black text-gray-700 dark:text-gray-200">{student.analytics.continueClicks ?? 0}</div>
+                                                            </div>
+                                                            {/* Submit Reason */}
+                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm col-span-2 md:col-span-1">
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Submit Reason</div>
+                                                                <div className={`text-xs font-bold ${student.analytics.submitReason?.includes('student') ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                                                    {student.analytics.submitReason || '-'}
+                                                                </div>
+                                                            </div>
+                                                            {/* Timing */}
+                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Started At</div>
+                                                                <div className="text-xs font-bold text-gray-700 dark:text-gray-200">{student.analytics.startedAt ? new Date(student.analytics.startedAt).toLocaleString() : '-'}</div>
+                                                            </div>
+                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
+                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Last Updated</div>
+                                                                <div className="text-xs font-bold text-gray-700 dark:text-gray-200">{student.analytics.lastUpdatedAt ? new Date(student.analytics.lastUpdatedAt).toLocaleString() : '-'}</div>
+                                                            </div>
+                                                        </div>
+                                                        {/* Per-Question Analytics */}
+                                                        {student.analytics.perQuestion && Object.keys(student.analytics.perQuestion).length > 0 && (
+                                                            <div className="mt-4">
+                                                                <div className="flex items-center gap-2 mb-3">
+                                                                    <MousePointerClick className="w-3.5 h-3.5 text-violet-500" />
+                                                                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-violet-600 dark:text-violet-400">Per-Question Clicks</span>
+                                                                </div>
+                                                                <div className="rounded-xl border border-gray-200 dark:border-white/5 overflow-hidden bg-white dark:bg-[#1A1F2E]">
+                                                                    <table className="w-full text-xs">
+                                                                        <thead className="bg-gray-50 dark:bg-black/20 border-b border-gray-200 dark:border-white/5">
+                                                                            <tr>
+                                                                                <th className="p-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Question ID</th>
+                                                                                <th className="p-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-cyan-500">Compile</th>
+                                                                                <th className="p-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-violet-500">Submit</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                                                                            {Object.entries(student.analytics.perQuestion).map(([qId, qData], qi) => (
+                                                                                <tr key={qId} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
+                                                                                    <td className="p-2.5 font-mono text-gray-600 dark:text-gray-300">Q{qi + 1} <span className="text-[9px] text-gray-400">({qId.slice(-6)})</span></td>
+                                                                                    <td className="p-2.5 text-center font-bold text-cyan-600 dark:text-cyan-400">{qData.compileClicks ?? 0}</td>
+                                                                                    <td className="p-2.5 text-center font-bold text-violet-600 dark:text-violet-400">{qData.submitClicks ?? 0}</td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        {/* Navigate to student detail */}
+                                                        {onStudentSelect && student.student_name && (
+                                                            <div className="mt-4 flex justify-end">
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); onStudentSelect(student); }}
+                                                                    className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:text-violet-500 flex items-center gap-1 transition-colors"
+                                                                >
+                                                                    View Student Detail <ArrowLeft className="w-3 h-3 rotate-180" />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                        </React.Fragment>
                                     );
                                 })}
                                 {displayStudents.length === 0 && (

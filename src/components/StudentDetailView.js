@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronDown, ChevronRight, BookOpen, Clock, AlertCircle, Award, Activity, Globe, ArrowRight, TrendingUp, Check, X, Trophy, Medal, Star, Calendar, Target, Zap, Timer, Flame, Code, FileText, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight, BookOpen, Clock, AlertCircle, Award, Activity, Globe, ArrowRight, TrendingUp, Check, X, Trophy, Medal, Star, Calendar, Target, Zap, Timer, Flame, Code, FileText, Eye, EyeOff, WifiOff, ShieldAlert, MousePointerClick } from 'lucide-react';
 import { CircularProgress } from './CircularProgress';
 import { API_CONFIG } from '../utils/api';
 import { getAdminToken } from '../utils/cookies';
@@ -11,10 +11,12 @@ export default function StudentDetailView({ student, onBack, onStudentSelect }) 
     const [courses, setCourses] = useState([]);
     const [examCourses, setExamCourses] = useState([]);
     const [loadingCourses, setLoadingCourses] = useState(false);
+    const [loadingExamCourses, setLoadingExamCourses] = useState(false);
     const { user } = useAuth();
 
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [selectedExamCourse, setSelectedExamCourse] = useState(null);
+    const [showExamAnalytics, setShowExamAnalytics] = useState(false);
     const [courseStructure, setCourseStructure] = useState(null);
     const [loadingStructure, setLoadingStructure] = useState(false);
 
@@ -185,6 +187,7 @@ export default function StudentDetailView({ student, onBack, onStudentSelect }) 
 
     // Fetch Exam Courses
     const fetchExamCourses = async (batchId, studentData) => {
+        setLoadingExamCourses(true);
         try {
             if (!batchId) return;
             const res = await fetch(`${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.getExamCoursesByBatch}`, {
@@ -250,6 +253,8 @@ export default function StudentDetailView({ student, onBack, onStudentSelect }) 
             setExamCourses(enriched.filter(c => c.examData));
         } catch (e) {
             console.error('Failed to fetch exam courses:', e);
+        } finally {
+            setLoadingExamCourses(false);
         }
     };
 
@@ -511,7 +516,7 @@ export default function StudentDetailView({ student, onBack, onStudentSelect }) 
                     <CoursesGridView
                         courses={courses}
                         examCourses={examCourses}
-                        loading={loadingCourses}
+                        loading={loadingCourses || loadingExamCourses}
                         onSelect={handleCourseSelect}
                         onExamSelect={handleExamCourseSelect}
                     />
@@ -519,7 +524,7 @@ export default function StudentDetailView({ student, onBack, onStudentSelect }) 
 
                 {/* Exam Deep Dive View */}
                 {viewLink === 'exam_deep_dive' && selectedExamCourse && (
-                    <div className="flex flex-col h-full overflow-hidden">
+                    <div className="flex flex-col h-full overflow-y-auto custom-scrollbar">
                         {/* Compact Exam Score Card */}
                         {selectedExamCourse.examData?.myResult && (
                             <div className="shrink-0 mx-8 mt-6 p-4 bg-gradient-to-r from-violet-50 via-white to-purple-50 dark:from-violet-900/20 dark:via-[#1A1F2E] dark:to-purple-900/20 rounded-2xl border border-violet-200 dark:border-violet-500/20 shadow-md">
@@ -565,8 +570,122 @@ export default function StudentDetailView({ student, onBack, onStudentSelect }) 
                             </div>
                         )}
 
+                        {/* Analytics Card */}
+                        {selectedExamCourse.examData?.myResult?.analytics && (() => {
+                            const an = selectedExamCourse.examData.myResult.analytics;
+                            return (
+                                <div className="shrink-0 mx-8 mt-4 bg-white dark:bg-[#1A1F2E] rounded-2xl border border-gray-200 dark:border-white/5 shadow-sm overflow-hidden transition-all duration-300">
+                                    <button 
+                                        onClick={() => setShowExamAnalytics(!showExamAnalytics)}
+                                        className="w-full flex items-center justify-between p-5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group focus:outline-none"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <Activity className="w-4 h-4 text-violet-500 group-hover:scale-110 transition-transform" />
+                                            <span className="text-xs font-extrabold uppercase tracking-widest text-violet-600 dark:text-violet-400">Exam Analytics</span>
+                                        </div>
+                                        <div className="text-gray-400 bg-gray-100 dark:bg-white/5 rounded-full p-1 group-hover:bg-gray-200 dark:group-hover:bg-white/10 transition-colors">
+                                            {showExamAnalytics ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                        </div>
+                                    </button>
+                                    
+                                    {showExamAnalytics && (
+                                        <div className="px-5 pb-5 pt-1 border-t border-gray-100 dark:border-white/5 animate-in slide-in-from-top-2 duration-200">
+                                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/5">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Starting IP</div>
+                                            <div className="text-sm font-bold text-gray-800 dark:text-gray-200 font-mono">{an.startingIp || '-'}</div>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/5">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Ending IP</div>
+                                            <div className={`text-sm font-bold font-mono ${an.startingIp && an.endingIp && an.startingIp !== an.endingIp ? 'text-red-500' : 'text-gray-800 dark:text-gray-200'}`}>
+                                                {an.endingIp || '-'}
+                                                {an.startingIp && an.endingIp && an.startingIp !== an.endingIp && <span className="ml-1 text-[9px] text-red-400 font-sans">⚠ Changed</span>}
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/5">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><EyeOff className="w-3 h-3" /> Lost Focus</div>
+                                            <div className={`text-lg font-black ${(an.lostFocusCount || 0) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{an.lostFocusCount ?? 0}</div>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/5">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><ShieldAlert className="w-3 h-3" /> Face Warnings</div>
+                                            <div className={`text-lg font-black ${(an.faceWarnings || 0) > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                                                {an.faceWarnings ?? 0}<span className="text-xs font-medium text-gray-400">/{an.faceWarningsMax ?? '?'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/5">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><WifiOff className="w-3 h-3" /> Disconnects</div>
+                                            <div className={`text-lg font-black ${(an.internetDisconnects || 0) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{an.internetDisconnects ?? 0}</div>
+                                            {(an.internetOfflineSeconds || 0) > 0 && <div className="text-[10px] text-gray-400 mt-0.5">{an.internetOfflineSeconds}s offline</div>}
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/5">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Blocked by Proctor</div>
+                                            <div className={`text-lg font-black ${(an.blockedByProctorCount || 0) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{an.blockedByProctorCount ?? 0}</div>
+                                            {(an.blockedSeconds || 0) > 0 && <div className="text-[10px] text-gray-400 mt-0.5">{an.blockedSeconds}s blocked</div>}
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/5">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><MousePointerClick className="w-3 h-3" /> Compile Clicks</div>
+                                            <div className="text-lg font-black text-cyan-600 dark:text-cyan-400">{an.compileClicks ?? 0}</div>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/5">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><MousePointerClick className="w-3 h-3" /> Submit Clicks</div>
+                                            <div className="text-lg font-black text-violet-600 dark:text-violet-400">{an.submitClicks ?? 0}</div>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/5">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Continue Clicks</div>
+                                            <div className="text-lg font-black text-gray-700 dark:text-gray-200">{an.continueClicks ?? 0}</div>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/5">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Submit Reason</div>
+                                            <div className={`text-xs font-bold ${an.submitReason?.includes('student') ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                                {an.submitReason || '-'}
+                                            </div>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/5">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Started At</div>
+                                            <div className="text-xs font-bold text-gray-700 dark:text-gray-200">{an.startedAt ? new Date(an.startedAt).toLocaleString() : '-'}</div>
+                                        </div>
+                                        <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/20 border border-gray-100 dark:border-white/5">
+                                            <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Last Updated</div>
+                                            <div className="text-xs font-bold text-gray-700 dark:text-gray-200">{an.lastUpdatedAt ? new Date(an.lastUpdatedAt).toLocaleString() : '-'}</div>
+                                        </div>
+                                    </div>
+                                    {/* Per-Question Clicks */}
+                                    {an.perQuestion && Object.keys(an.perQuestion).length > 0 && (
+                                        <div className="mt-4">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <MousePointerClick className="w-3.5 h-3.5 text-violet-500" />
+                                                <span className="text-[10px] font-extrabold uppercase tracking-widest text-violet-600 dark:text-violet-400">Per-Question Clicks</span>
+                                            </div>
+                                            <div className="rounded-xl border border-gray-200 dark:border-white/5 overflow-hidden bg-gray-50 dark:bg-black/20">
+                                                <table className="w-full text-xs">
+                                                    <thead className="bg-gray-100 dark:bg-black/30 border-b border-gray-200 dark:border-white/5">
+                                                        <tr>
+                                                            <th className="p-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Question</th>
+                                                            <th className="p-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-cyan-500">Compile</th>
+                                                            <th className="p-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-violet-500">Submit</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                                                        {Object.entries(an.perQuestion).map(([qId, qData], qi) => (
+                                                            <tr key={qId} className="hover:bg-white/50 dark:hover:bg-white/5 transition-colors">
+                                                                <td className="p-2.5 font-mono text-gray-600 dark:text-gray-300">Q{qi + 1} <span className="text-[9px] text-gray-400">({qId.slice(-6)})</span></td>
+                                                                <td className="p-2.5 text-center font-bold text-cyan-600 dark:text-cyan-400">{qData.compileClicks ?? 0}</td>
+                                                                <td className="p-2.5 text-center font-bold text-violet-600 dark:text-violet-400">{qData.submitClicks ?? 0}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
+
                         {/* Deep Dive Layout (same as practice courses) */}
-                        <div className="flex flex-1 overflow-hidden">
+                        <div className="flex flex-1 min-h-[800px]">
                             {/* LEFT COLUMN */}
                             <div className="w-1/3 min-w-[350px] border-r border-gray-200 dark:border-white/5 overflow-y-auto custom-scrollbar bg-gray-50 dark:bg-black/10 backdrop-blur-md p-6">
                                 <div className="mb-6">
