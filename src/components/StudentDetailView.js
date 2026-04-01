@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronDown, ChevronRight, BookOpen, Clock, AlertCircle, Award, Activity, Globe, ArrowRight, TrendingUp, Check, X, Trophy, Medal, Star, Calendar, Target, Zap, Timer, Flame, Code, FileText, Eye, EyeOff, WifiOff, ShieldAlert, MousePointerClick } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight, BookOpen, Clock, AlertCircle, Award, Activity, Globe, ArrowRight, TrendingUp, Check, X, Trophy, Medal, Star, Calendar, Target, Zap, Timer, Flame, Code, FileText, Eye, EyeOff, Wifi, WifiOff, ShieldAlert, MousePointerClick } from 'lucide-react';
 import { CircularProgress } from './CircularProgress';
 import { API_CONFIG } from '../utils/api';
 import { getAdminToken } from '../utils/cookies';
@@ -772,6 +772,7 @@ export default function StudentDetailView({ student, onBack, onStudentSelect }) 
                                         loadingHistory={loadingHistory}
                                         resultType={resultType}
                                         setResultType={handleResultTypeChange}
+                                        analytics={viewLink === 'exam_deep_dive' ? selectedExamCourse?.examData?.myResult?.analytics : null}
                                     />
                                 ) : (
                                     <div className="h-full flex flex-col items-center justify-center text-center text-gray-500">
@@ -1207,7 +1208,7 @@ const ExamDetailView = ({ examCourse, studentRegId, onBack, onStudentSelect }) =
     );
 };
 
-const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistory, resultType, setResultType }) => {
+const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistory, resultType, setResultType, analytics }) => {
     const [viewMode, setViewMode] = useState('history');
     const [selectedAttempt, setSelectedAttempt] = useState(null);
     const [attemptDetails, setAttemptDetails] = useState(null);
@@ -1476,7 +1477,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
 
                         {/* Proctoring Metrics */}
                         {attemptDetails.proctoring_metrics && (
-                            <div className="rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 p-6">
+                            <div className="rounded-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 p-6 mb-4">
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
                                     <AlertCircle className="w-5 h-5 text-amber-500" /> Proctoring Metrics
                                 </h3>
@@ -1489,6 +1490,10 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                 </div>
                             </div>
                         )}
+
+                        {/* Attempt Environment Logs */}
+                        <SubmissionDebugDropdown resultType={resultType} debugConfigs={attemptDetails.debug_configs} />
+
 
                         {/* Submissions */}
                         <div className="space-y-4">
@@ -1508,6 +1513,7 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                                         resultType={resultType}
                                         getQuestionScore={getQuestionScore}
                                         getQuestionMaxScore={getQuestionMaxScore}
+                                        analytics={analytics}
                                     />
                                 ))}
                             </div>
@@ -1590,55 +1596,57 @@ const DeepDiveRightPanel = ({ student, courseId, subUnit, history, loadingHistor
                             <div key={idx} className="relative group perspective-1000">
                                 <div className={`absolute -left-[41px] top-6 z-10 w-6 h-6 rounded-full border-4 border-gray-50 dark:border-[#0B0F19] transition-all duration-300 ${isRecent ? 'bg-blue-500 scale-110 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'bg-gray-300 dark:bg-gray-700 group-hover:bg-blue-400'}`} />
 
-                                <button
-                                    onClick={() => handleAttemptClick(attempt)}
-                                    className="w-full text-left relative overflow-hidden bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 p-6 rounded-2xl hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-300 group-hover:-translate-y-1 group-hover:translate-x-1"
-                                >
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full -mr-8 -mt-8 pointer-events-none" />
+                                <div className="bg-white dark:bg-white/5 border border-gray-200 dark:border-white/5 p-6 rounded-2xl transition-all duration-300 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-900/10 group-hover:-translate-y-1 group-hover:translate-x-1">
+                                    <button
+                                        onClick={() => handleAttemptClick(attempt)}
+                                        className="w-full text-left relative overflow-hidden focus:outline-none"
+                                    >
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-full -mr-8 -mt-8 pointer-events-none" />
 
-                                    <div className="flex justify-between items-start relative z-10">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center font-bold text-gray-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                                                #{attempt.attempt || attempt.attempt_count}
-                                            </div>
-                                            <div>
-                                                <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-0.5">Attempt Score</div>
-                                                <div className="flex items-baseline gap-2">
-                                                    <span className="text-3xl font-black text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors">
-                                                        {score}
-                                                    </span>
-                                                    <span className="text-sm text-gray-400">/ {maxScore}</span>
+                                        <div className="flex justify-between items-start relative z-10">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center font-bold text-gray-500 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                                                    #{attempt.attempt || attempt.attempt_count}
+                                                </div>
+                                                <div>
+                                                    <div className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-0.5">Attempt Score</div>
+                                                    <div className="flex items-baseline gap-2">
+                                                        <span className="text-3xl font-black text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors">
+                                                            {score}
+                                                        </span>
+                                                        <span className="text-sm text-gray-400">/ {maxScore}</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="flex flex-col items-end gap-2">
-                                            <div className="flex items-center gap-2">
-                                                {isBest && (
-                                                    <span className="px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-500 text-xs font-bold uppercase flex items-center gap-1">
-                                                        <Trophy className="w-3 h-3" /> Best
-                                                    </span>
-                                                )}
-                                                {isRecent && (
-                                                    <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 text-xs font-bold uppercase flex items-center gap-1">
-                                                        <Zap className="w-3 h-3" /> Latest
-                                                    </span>
-                                                )}
-                                                {/* Pass/Fail indicator */}
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isPassed
-                                                    ? 'bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                                                    : 'bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.3)]'
-                                                    }`}>
-                                                    {isPassed ? (
-                                                        <Check className="w-4 h-4 text-emerald-500" />
-                                                    ) : (
-                                                        <X className="w-4 h-4 text-red-500" />
+                                            <div className="flex flex-col items-end gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    {isBest && (
+                                                        <span className="px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-500 text-xs font-bold uppercase flex items-center gap-1">
+                                                            <Trophy className="w-3 h-3" /> Best
+                                                        </span>
                                                     )}
+                                                    {isRecent && (
+                                                        <span className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 text-xs font-bold uppercase flex items-center gap-1">
+                                                            <Zap className="w-3 h-3" /> Latest
+                                                        </span>
+                                                    )}
+                                                    {/* Pass/Fail indicator */}
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isPassed
+                                                        ? 'bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                                                        : 'bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.3)]'
+                                                        }`}>
+                                                        {isPassed ? (
+                                                            <Check className="w-4 h-4 text-emerald-500" />
+                                                        ) : (
+                                                            <X className="w-4 h-4 text-red-500" />
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </button>
+                                    </button>
+                                </div>
                             </div>
                         );
                     })}
@@ -1684,7 +1692,7 @@ const MetricCard = ({ label, value, isWarning }) => (
 );
 
 // Submission Card Component
-const SubmissionCard = ({ sub, idx, resultType, getQuestionScore, getQuestionMaxScore }) => {
+const SubmissionCard = ({ sub, idx, resultType, getQuestionScore, getQuestionMaxScore, analytics }) => {
     const [expanded, setExpanded] = useState(false);
 
     const score = getQuestionScore(sub);
@@ -1726,7 +1734,237 @@ const SubmissionCard = ({ sub, idx, resultType, getQuestionScore, getQuestionMax
                     {resultType === 'mcq' ? (
                         <MCQSubmissionDetail sub={sub} />
                     ) : (
-                        <CodingSubmissionDetail sub={sub} />
+                        <CodingSubmissionDetail sub={sub} analytics={analytics} />
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Environment Debug Config UI Components
+const TerminalDebugView = ({ config }) => {
+    if (!config) return <div className="text-[11px] text-gray-500 font-mono italic">No data collected</div>;
+    return (
+        <div className="flex flex-col font-mono bg-[#0B0F19] rounded-xl overflow-hidden border border-white/5">
+            {/* -- Quick Insights Header -- */}
+            <div className="px-3 py-2 border-b border-white/5 bg-white/[0.02] flex flex-wrap gap-2 shrink-0">
+                {config.os?.platform && (
+                    <span className="px-2 py-1 rounded flex items-center gap-1.5 bg-white/5 border border-white/10 text-[10px] text-gray-300 shadow-sm">
+                        <Activity className="w-3 h-3 text-cyan-400" />
+                        {config.os?.platform === 'win32' ? 'Windows' : config.os?.platform === 'darwin' ? 'macOS' : config.os?.platform} {config.os?.arch ? `(${config.os.arch})` : ''}
+                    </span>
+                )}
+                {config.network?.interfaces?.[0]?.ip && (
+                    <span className="px-2 py-1 rounded flex items-center gap-1.5 bg-white/5 border border-white/10 text-[10px] text-gray-300 shadow-sm">
+                        <Wifi className="w-3 h-3 text-blue-400" />
+                        {config.network.interfaces[0].ip}
+                    </span>
+                )}
+                {config.proxy?.settings && (
+                    <span className={`px-2 py-1 rounded flex items-center gap-1.5 border border-white/10 text-[10px] shadow-sm ${config.proxy.settings === 'DIRECT' ? 'bg-white/5 text-gray-300' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
+                        <ShieldAlert className="w-3 h-3" />
+                        Proxy: {config.proxy.settings}
+                    </span>
+                )}
+                {(config.timestamp || config.capturedAt) && (
+                    <span className="px-2 py-1 rounded flex items-center gap-1.5 bg-white/5 border border-white/10 text-[10px] text-gray-300 shadow-sm" title={new Date(config.timestamp || config.capturedAt).toLocaleString()}>
+                        <Clock className="w-3 h-3 text-violet-400" />
+                        {new Date(config.timestamp || config.capturedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
+                )}
+            </div>
+            
+            {/* -- Raw Output -- */}
+            <div className="p-4 space-y-4 text-[11px] text-gray-400 overflow-x-auto">
+                {config.os && (
+                    <div>
+                        <span className="text-cyan-400/70 block mb-1">OS_INFO</span>
+                        <div className="pl-3 grid grid-cols-2 gap-x-4 gap-y-1 text-gray-300">
+                            {Object.entries(config.os).map(([k, v]) => (
+                                <div key={k} className="flex truncate"><span className="text-gray-500 min-w-16">{k}:</span> <span className="text-emerald-400 truncate ml-1" title={v}>{v}</span></div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                
+                {config.network && config.network.interfaces && (
+                    <div>
+                        <span className="text-cyan-400/70 block mb-1">NET_INTERFACES</span>
+                        <div className="pl-3 space-y-2">
+                            {config.network.interfaces.map((intf, i) => (
+                                <div key={i} className="flex flex-col gap-0.5 border-l-2 border-white/5 pl-2">
+                                    {Object.entries(intf).map(([k, v]) => (
+                                        <div key={k} className="flex truncate"><span className="text-gray-500 min-w-16">{k}:</span> <span className="text-violet-400 truncate ml-1">{v}</span></div>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {config.proxy && (
+                    <div>
+                        <span className="text-cyan-400/70 block mb-1">PROXY_SETTINGS</span>
+                        <div className="pl-3 grid grid-cols-1 gap-y-1 text-gray-300">
+                            {Object.entries(config.proxy).map(([k, v]) => (
+                                <div key={k} className="flex truncate"><span className="text-gray-500 min-w-16">{k}:</span> <span className="text-amber-300 truncate ml-1">{v}</span></div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="pt-3 border-t border-white/5 mt-3 space-y-1 text-[10px] text-gray-600">
+                    {config.timestamp && <div>TS: <span className="text-gray-400">{config.timestamp}</span></div>}
+                    {config.capturedAt && <div>CAP: <span className="text-gray-400">{config.capturedAt}</span></div>}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const DebugConfigCard = ({ title, config }) => {
+    if (!config) return <div className="text-xs text-gray-500 p-4 border border-dashed border-gray-200 dark:border-white/10 rounded-xl">No configuration logged</div>;
+    return (
+        <div className="bg-white/50 dark:bg-black/20 rounded-xl border border-gray-200 dark:border-white/5 p-5 text-sm hover:border-blue-500/30 dark:hover:border-blue-500/30 transition-colors shadow-sm">
+            <h5 className="font-bold text-gray-800 dark:text-gray-200 mb-5 text-xs uppercase tracking-wider">{title}</h5>
+            <div className="space-y-6">
+                
+                {/* OS Details */}
+                {config.os && (
+                    <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-500/20">
+                            <Globe className="w-5 h-5 text-blue-500" />
+                        </div>
+                        <div className="w-full min-w-0">
+                            <div className="text-[10px] uppercase font-bold tracking-wider text-gray-500 mb-2">Operating System</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {Object.entries(config.os).map(([k, v]) => (
+                                    <div key={k} className="flex justify-between items-center bg-white dark:bg-black/40 p-2 rounded border border-gray-100 dark:border-white/5 overflow-hidden">
+                                        <span className="text-[10px] text-gray-500 uppercase">{k}</span>
+                                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate ml-2" title={v}>{v}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
+                {/* Network Details */}
+                {config.network && config.network.interfaces && config.network.interfaces.length > 0 && (
+                    <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-500/20">
+                            <Activity className="w-5 h-5 text-emerald-500" />
+                        </div>
+                        <div className="w-full min-w-0">
+                            <div className="text-[10px] uppercase font-bold tracking-wider text-gray-500 mb-2">Network Interfaces</div>
+                            <div className="space-y-3 w-full">
+                                {config.network.interfaces.map((intf, i) => (
+                                    <div key={i} className="flex flex-col bg-white dark:bg-black/40 p-3 rounded-lg border border-gray-100 dark:border-white/5 shadow-sm space-y-2">
+                                         {Object.entries(intf).map(([k, v]) => (
+                                            <div key={k} className="flex justify-between items-center text-xs overflow-hidden">
+                                                <span className="text-[10px] text-gray-500 uppercase">{k}</span>
+                                                <span className={`${k === 'ip' ? 'text-emerald-600 dark:text-emerald-400 font-mono' : 'text-gray-700 dark:text-gray-300'} truncate ml-2`} title={v}>{v}</span>
+                                            </div>
+                                         ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Proxy Details */}
+                {config.proxy && (
+                    <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center shrink-0 border border-amber-100 dark:border-amber-500/20">
+                            <ShieldAlert className="w-5 h-5 text-amber-500" />
+                        </div>
+                        <div className="w-full min-w-0">
+                            <div className="text-[10px] uppercase font-bold tracking-wider text-gray-500 mb-2">Proxy Settings</div>
+                            <div className="grid grid-cols-1 gap-2">
+                                {Object.entries(config.proxy).map(([k, v]) => (
+                                    <div key={k} className="flex justify-between items-center bg-white dark:bg-black/40 p-2 rounded border border-gray-100 dark:border-white/5 overflow-hidden">
+                                        <span className="text-[10px] text-gray-500 uppercase">{k}</span>
+                                        <span className="text-xs font-mono text-amber-600 dark:text-amber-400 truncate ml-2" title={v}>{v}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
+                {/* Timestamp Details */}
+                <div className="flex items-start gap-4 pt-4 border-t border-gray-100 dark:border-white/5">
+                    <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center shrink-0 border border-violet-100 dark:border-violet-500/20">
+                        <Clock className="w-5 h-5 text-violet-500" />
+                    </div>
+                    <div className="w-full min-w-0">
+                        <div className="text-[10px] uppercase font-bold tracking-wider text-gray-500 mb-2">Timestamps</div>
+                        <div className="space-y-2">
+                            {config.timestamp && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] text-gray-500 uppercase">Timestamp</span>
+                                    <span className="text-xs font-mono text-gray-700 dark:text-gray-300 truncate ml-2" title={config.timestamp}>{new Date(config.timestamp).toLocaleString()}</span>
+                                </div>
+                            )}
+                            {config.capturedAt && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] text-gray-500 uppercase">Captured At</span>
+                                    <span className="text-xs font-mono text-gray-700 dark:text-gray-300 truncate ml-2" title={config.capturedAt}>{new Date(config.capturedAt).toLocaleString()}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const SubmissionDebugDropdown = ({ resultType, debugConfigs }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    if (!debugConfigs) return null;
+
+    return (
+        <div className="mt-6 border border-gray-200 dark:border-white/10 rounded-xl overflow-hidden bg-white dark:bg-[#0B0F19]">
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(!isOpen);
+                }}
+                className="w-full flex justify-between items-center p-4 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors focus:outline-none"
+            >
+                <div className="flex items-center gap-2">
+                    {resultType === 'mcq' ? <ShieldAlert className="w-4 h-4 text-blue-500" /> : <Code className="w-4 h-4 text-cyan-500" />}
+                    <span>Environment Configuration Logs</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isOpen && (
+                <div className="p-5 border-t border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-black/20 cursor-default">
+                    {resultType === 'mcq' ? (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                            <DebugConfigCard title="Start Config" config={debugConfigs.start_config} />
+                            <DebugConfigCard title="End Config" config={debugConfigs.end_config} />
+                        </div>
+                    ) : (
+                        <div className="bg-[#0A0D14] rounded-xl border border-white/10 overflow-hidden shadow-inner flex flex-col xl:flex-row divide-y xl:divide-y-0 xl:divide-x divide-white/10">
+                            <div className="flex-1 p-5 lg:p-6 hover:bg-white/[0.01] transition-colors">
+                                <span className="text-[10px] text-cyan-500 font-mono uppercase font-black tracking-widest flex items-center gap-2 mb-4 bg-cyan-500/10 w-fit px-3 py-1 rounded-full border border-cyan-500/20">
+                                    <Globe className="w-3 h-3" /> Start Config
+                                </span>
+                                <TerminalDebugView config={debugConfigs.start_config} />
+                            </div>
+                            <div className="flex-1 p-5 lg:p-6 bg-white/[0.02] hover:bg-white/[0.03] transition-colors">
+                                <span className="text-[10px] text-violet-500 font-mono uppercase font-black tracking-widest flex items-center gap-2 mb-4 bg-violet-500/10 w-fit px-3 py-1 rounded-full border border-violet-500/20">
+                                    <Activity className="w-3 h-3" /> End Config
+                                </span>
+                                <TerminalDebugView config={debugConfigs.end_config} />
+                            </div>
+                        </div>
                     )}
                 </div>
             )}
@@ -1736,67 +1974,151 @@ const SubmissionCard = ({ sub, idx, resultType, getQuestionScore, getQuestionMax
 
 // MCQ Detail Component
 const MCQSubmissionDetail = ({ sub }) => {
+    const hasHistory = sub.history && sub.history.length > 0;
+    const correctCount = hasHistory ? sub.history.filter(h => h.is_correct).length : (sub.is_correct ? 1 : 0);
+    const totalCount = hasHistory ? sub.history.length : 1;
+    const correctPct = Math.round((correctCount / totalCount) * 100);
+
     return (
-        <div className="space-y-2 pl-11">
-            {sub.options && sub.options.map((option, optIdx) => {
-                const optionText = typeof option === 'object' ? option.option : option;
-                const isCorrectAnswer = typeof option === 'object' ? option.isAnswer === true : false;
-                const isSelected = sub.submitted_answer_index === optIdx;
+        <div className="space-y-6 pl-11">
+            <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex-1 space-y-2">
+                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Options</div>
+                    {sub.options && sub.options.map((option, optIdx) => {
+                        const optionText = typeof option === 'object' ? option.option : option;
+                        const isCorrectAnswer = typeof option === 'object' ? option.isAnswer === true : false;
+                        const isSelected = sub.submitted_answer_index === optIdx;
 
-                let bgClass = 'bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5';
-                let textClass = 'text-gray-700 dark:text-gray-300';
+                        let bgClass = 'bg-gray-50 dark:bg-white/5 border-gray-100 dark:border-white/5';
+                        let textClass = 'text-gray-700 dark:text-gray-300';
 
-                if (isCorrectAnswer) {
-                    bgClass = 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20';
-                    textClass = 'text-emerald-700 dark:text-emerald-400';
-                } else if (isSelected && !isCorrectAnswer) {
-                    bgClass = 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20';
-                    textClass = 'text-red-700 dark:text-red-400';
-                }
+                        if (isCorrectAnswer) {
+                            bgClass = 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20';
+                            textClass = 'text-emerald-700 dark:text-emerald-400';
+                        } else if (isSelected && !isCorrectAnswer) {
+                            bgClass = 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20';
+                            textClass = 'text-red-700 dark:text-red-400';
+                        }
 
-                return (
-                    <div
-                        key={optIdx}
-                        className={`p-3 rounded-lg border flex items-center justify-between ${bgClass}`}
-                    >
-                        <div className="flex flex-col">
-                            <span className={`font-medium ${textClass}`}>
-                                {optionText}
-                            </span>
-                            <div className="flex gap-2 mt-1">
-                                {isSelected && (
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                        (Your Answer)
-                                    </span>
-                                )}
-                                {isCorrectAnswer && (
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                                        (Correct Answer)
-                                    </span>
-                                )}
+                        return (
+                            <div key={optIdx} className={`p-3 rounded-lg border flex items-center justify-between ${bgClass}`}>
+                                <div className="flex flex-col">
+                                    <span className={`font-medium ${textClass}`}>{optionText}</span>
+                                    <div className="flex gap-2 mt-1">
+                                        {isSelected && <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">(Your Answer)</span>}
+                                        {isCorrectAnswer && <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">(Correct Answer)</span>}
+                                    </div>
+                                </div>
+                                {isCorrectAnswer && <Check className="w-5 h-5 text-emerald-500" />}
+                                {!isCorrectAnswer && isSelected && <X className="w-5 h-5 text-red-500" />}
                             </div>
+                        );
+                    })}
+                </div>
+                
+                <div className="shrink-0 w-full md:w-56 flex flex-col items-center justify-center p-5 bg-gray-50 dark:bg-black/20 rounded-2xl border border-gray-100 dark:border-white/5">
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-4">Submission Accuracy</div>
+                    <div className="relative w-24 h-24 rounded-full" style={{ background: `conic-gradient(#10b981 ${correctPct}%, #ef4444 ${correctPct}%)` }}>
+                        <div className="absolute inset-[6px] bg-gray-50 dark:bg-[#1A1F2E] rounded-full flex flex-col items-center justify-center shadow-inner">
+                            <span className="text-xl font-black text-gray-900 dark:text-white">{correctPct}%</span>
+                            <span className="text-[8px] tracking-widest text-gray-500 uppercase font-bold mt-0.5">Correct</span>
                         </div>
-                        {isCorrectAnswer && <Check className="w-5 h-5 text-emerald-500" />}
-                        {!isCorrectAnswer && isSelected && <X className="w-5 h-5 text-red-500" />}
                     </div>
-                );
-            })}
+                    <div className="flex items-center gap-4 mt-5 text-[10px] font-bold uppercase tracking-wider">
+                        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-emerald-500 shadow-sm shadow-emerald-500/40"/>{correctCount} Right</div>
+                        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-red-500 shadow-sm shadow-red-500/40"/>{totalCount - correctCount} Wrong</div>
+                    </div>
+                </div>
+            </div>
+
+            {hasHistory && (
+                <div className="space-y-4 pt-6 mt-4 border-t border-gray-100 dark:border-white/5">
+                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-violet-500" /> Submission Timeline
+                    </div>
+                    <div className="relative pl-6 space-y-4 before:absolute before:inset-y-2 before:left-2 before:w-[2px] before:bg-gray-200 dark:before:bg-white/10 before:rounded-full">
+                        {sub.history.map((h, i) => {
+                            const isLatest = h.is_latest || i === sub.history.length - 1;
+                            return (
+                                <div key={i} className="relative">
+                                    <div className={`absolute -left-[1.375rem] top-2 w-3.5 h-3.5 rounded-full border-[3px] border-white dark:border-[#1A1F2E] ${h.is_correct ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                                    <div className={`p-4 rounded-xl border flex items-center justify-between transition-colors ${isLatest ? 'bg-blue-50/50 dark:bg-blue-500/5 border-blue-200 dark:border-blue-500/20' : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/5'}`}>
+                                        <div>
+                                            <div className="flex items-center gap-3 mb-1.5">
+                                                <span className={`text-xs font-black uppercase tracking-wider ${h.is_correct ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                    {h.is_correct ? 'Correct' : 'Incorrect'}
+                                                </span>
+                                                <span className="text-[10px] text-gray-400 font-mono tracking-wider">
+                                                    {h.timestamp ? new Date(h.timestamp).toLocaleString() : 'N/A'}
+                                                </span>
+                                                {isLatest && <span className="text-[9px] bg-blue-500 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest shadow-sm shadow-blue-500/40 mt-[-1px]">Latest</span>}
+                                            </div>
+                                            <div className="text-sm text-gray-600 dark:text-gray-300">
+                                                Selected Option: <span className="font-bold text-gray-900 dark:text-white">{h.submitted_answer_text || `Option ${h.submitted_answer_index + 1}`}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 // Coding Detail Component
-const CodingSubmissionDetail = ({ sub }) => {
+const CodingSubmissionDetail = ({ sub, analytics }) => {
     const sampleCases = sub.test_cases?.filter(tc => !tc.name.toLowerCase().includes('hidden')) || [];
     const hiddenCases = sub.test_cases?.filter(tc => tc.name.toLowerCase().includes('hidden')) || [];
+    const qData = analytics?.perQuestion?.[sub.question_id] || { compileClicks: 0, submitClicks: 0 };
+    const totalClicks = (qData.compileClicks || 0) + (qData.submitClicks || 0);
+    const compilePct = totalClicks > 0 ? ((qData.compileClicks || 0) / totalClicks) * 100 : 0;
+    const submitPct = totalClicks > 0 ? ((qData.submitClicks || 0) / totalClicks) * 100 : 0;
+    const baseCode = sub.base_code || sub.base_compiler_code;
+    const hasHistory = sub.history && sub.history.length > 0;
 
     return (
-        <div className="space-y-6 pl-11">
+        <div className="space-y-8 pl-11">
+            {/* Interaction Analytics Bar Chart */}
+            <div className="bg-gray-50 dark:bg-black/20 p-5 rounded-2xl border border-gray-100 dark:border-white/5">
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2 mb-4">
+                    <Activity className="w-4 h-4 text-cyan-500" /> Per-Question Interactions
+                </div>
+                {totalClicks > 0 ? (
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                            <span className="flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400"><div className="w-2 h-2 rounded bg-cyan-500" /> Compile Clicks ({qData.compileClicks || 0})</span>
+                            <span className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400"><div className="w-2 h-2 rounded bg-violet-500" /> Submit Clicks ({qData.submitClicks || 0})</span>
+                        </div>
+                        <div className="flex h-3 text-white text-xs font-bold text-center rounded-full overflow-hidden shadow-inner">
+                            <div style={{ width: `${compilePct}%` }} className="bg-cyan-500 flex items-center justify-center transition-all duration-500 {compilePct > 10 ? 'px-2' : ''}" title={`Compile: ${qData.compileClicks}`} />
+                            <div style={{ width: `${submitPct}%` }} className="bg-violet-500 flex items-center justify-center transition-all duration-500 {submitPct > 10 ? 'px-2' : ''}" title={`Submit: ${qData.submitClicks}`} />
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-sm font-medium text-gray-400">No interaction data available for this question.</div>
+                )}
+            </div>
+
+            {/* Base Code */}
+            {baseCode && (
+                <div className="space-y-2">
+                    <div className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-amber-500" /> Base Compiler Code
+                    </div>
+                    <div className="bg-[#1A1F2E] p-4 rounded-xl border border-white/5 overflow-x-auto text-[11px] font-mono text-gray-300 whitespace-pre-wrap leading-relaxed">
+                        {baseCode}
+                    </div>
+                </div>
+            )}
+
             {/* Sample Test Cases */}
             {sampleCases.length > 0 && (
                 <div className="space-y-2">
                     <div className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                        <Eye className="w-4 h-4" /> Sample Test Cases
+                        <Eye className="w-4 h-4 text-emerald-500" /> Sample Test Cases
                     </div>
                     <div className="space-y-2">
                         {sampleCases.map((tc, i) => (
@@ -1880,6 +2202,50 @@ const CodingSubmissionDetail = ({ sub }) => {
                     </div>
                 </div>
             )}
+            {/* Submitted Code Timeline */}
+            <div className="space-y-4">
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <Code className="w-4 h-4 text-blue-500" /> Submission Timeline
+                </div>
+                {hasHistory ? (
+                    <div className="relative pl-6 space-y-6 before:absolute before:inset-y-2 before:left-2 before:w-[2px] before:bg-gray-200 dark:before:bg-white/10 before:rounded-full">
+                        {sub.history.map((h, i) => {
+                            const isLatest = h.is_latest || i === sub.history.length - 1;
+                            const isSuccess = h.status === 'Success' || h.status === 'Passed' || h.is_correct;
+                            return (
+                                <div key={i} className="relative">
+                                    <div className={`absolute -left-[1.375rem] top-2 w-3.5 h-3.5 rounded-full border-[3px] border-white dark:border-[#1A1F2E] ${isSuccess ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                    <div className={`p-4 rounded-xl border transition-colors ${isLatest ? 'bg-blue-50/50 dark:bg-blue-500/5 border-blue-200 dark:border-blue-500/20' : 'bg-white dark:bg-white/5 border-gray-100 dark:border-white/5'}`}>
+                                        <div className="flex items-center justify-between mb-3 border-b border-gray-100 dark:border-white/5 pb-3">
+                                            <div className="flex items-center gap-3">
+                                                <span className={`text-xs font-black uppercase tracking-wider ${isSuccess ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                                                    {h.status || (isSuccess ? 'Success' : 'Failure')}
+                                                </span>
+                                                <span className="text-[10px] text-gray-400 font-mono tracking-wider">
+                                                    {h.timestamp ? new Date(h.timestamp).toLocaleString() : 'N/A'}
+                                                </span>
+                                                {isLatest && <span className="text-[9px] bg-blue-500 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest shadow-sm shadow-blue-500/40">Latest Submission</span>}
+                                            </div>
+                                        </div>
+                                        <div className="bg-[#1A1F2E] p-4 rounded-xl border border-white/5 overflow-x-auto text-[11px] font-mono text-emerald-400 whitespace-pre-wrap leading-relaxed shadow-inner">
+                                            {h.code || h.last_submitted_code || '(no code snippet recorded)'}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="p-4 rounded-xl border bg-white dark:bg-white/5 border-gray-100 dark:border-white/5">
+                        <div className="flex items-center gap-3 mb-3 border-b border-gray-100 dark:border-white/5 pb-3">
+                            <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">Latest Submission</span>
+                        </div>
+                        <div className="bg-[#1A1F2E] p-4 rounded-xl border border-white/5 overflow-x-auto text-[11px] font-mono text-emerald-400 whitespace-pre-wrap leading-relaxed shadow-inner">
+                            {sub.last_submitted_code || sub.submitted_code || sub.code || '(no code snippet recorded)'}
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {/* Submitted Code */}
             <div className="space-y-2">

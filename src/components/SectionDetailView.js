@@ -971,17 +971,18 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
                                         </h3>
                                         <div className="space-y-3">
                                             {examCourses.map(course => (
-                                                <div key={course.course_id} className="p-5 rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/10 dark:to-purple-900/10 border border-violet-100 dark:border-violet-500/20 relative overflow-hidden group">
-                                                    <div className="relative z-10">
-                                                        <h4 className="font-bold text-gray-900 dark:text-white text-sm mb-3">{course.course_name}</h4>
-                                                        <button
-                                                            onClick={() => setInspectingTest(examDataMap[course.course_id])}
-                                                            className="w-full py-2.5 bg-white dark:bg-white/10 hover:bg-violet-50 dark:hover:bg-violet-500/20 text-violet-600 dark:text-violet-300 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-sm border border-violet-100 dark:border-violet-500/20 flex items-center justify-center gap-2"
-                                                        >
-                                                            View Results <ArrowLeft className="w-3 h-3 rotate-180" />
-                                                        </button>
+                                                <button 
+                                                    key={course.course_id} 
+                                                    onClick={() => setInspectingTest(examDataMap[course.course_id])}
+                                                    className="w-full text-left p-5 rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/10 dark:to-purple-900/10 border border-violet-100 dark:border-violet-500/20 relative overflow-hidden group hover:border-violet-300 dark:hover:border-violet-500/40 hover:shadow-md transition-all cursor-pointer"
+                                                >
+                                                    <div className="relative z-10 flex gap-3 items-start">
+                                                        <div className="shrink-0 mt-0.5 w-4 h-4 rounded-full bg-violet-200 dark:bg-violet-500/30 flex items-center justify-center">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-violet-600 dark:bg-violet-400"></div>
+                                                        </div>
+                                                        <h4 className="font-bold text-gray-900 dark:text-white text-sm">{course.course_name}</h4>
                                                     </div>
-                                                </div>
+                                                </button>
                                             ))}
                                         </div>
                                     </div>
@@ -1791,129 +1792,138 @@ function TestDetailOverlay({ test, students, sectionMetadata, onClose, isInline 
                                                 </span>
                                             </td>
                                         </tr>
-                                        {/* ── Expandable Analytics Row ── */}
-                                        {expandedStudent === student.uni_reg_id && student.analytics && (
-                                            <tr className="bg-gradient-to-r from-violet-50/60 via-purple-50/30 to-transparent dark:from-violet-500/10 dark:via-purple-500/5 dark:to-transparent">
+                                        {/* ── Expandable Analytics & Debug Row ── */}
+                                        {expandedStudent === student.uni_reg_id && (student.analytics || student.debug_configs) && (
+                                            <tr className="bg-[#0B0F19] border-t border-b border-white/5 shadow-inner">
                                                 <td colSpan={9} className="p-0">
-                                                    <div className="px-6 py-5 animate-in slide-in-from-top-2 duration-200">
-                                                        <div className="flex items-center gap-2 mb-4">
-                                                            <Activity className="w-4 h-4 text-violet-500" />
-                                                            <span className="text-xs font-extrabold uppercase tracking-widest text-violet-600 dark:text-violet-400">Exam Analytics</span>
-                                                            <span className="text-[10px] text-gray-400 ml-2">— {student.student_name}</span>
+                                                    <div className="p-6 animate-in slide-in-from-top-2 duration-200">
+                                                        <div className="flex flex-col xl:flex-row gap-6">
+                                                            
+                                                            {/* LEFT: Telemetry & Analytics */}
+                                                            {student.analytics && (
+                                                                <div className="flex-1 space-y-4">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Activity className="w-4 h-4 text-violet-500" />
+                                                                        <span className="text-xs font-extrabold uppercase tracking-widest text-violet-400">Activity Telemetry</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                                                        {Object.entries(student.analytics).filter(([k]) => k !== 'perQuestion' && k !== 'startedAt' && k !== 'lastUpdatedAt').map(([key, val]) => (
+                                                                             <div key={key} className="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col justify-between hover:bg-white/10 transition-colors">
+                                                                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                                                                 <span className={`text-sm font-black font-mono break-all ${typeof val === 'number' && val > 0 && (key.toLowerCase().includes('warning') || key.toLowerCase().includes('disconnect') || key.toLowerCase().includes('blocked')) ? 'text-red-400' : typeof val === 'number' && val > 0 ? 'text-emerald-400' : 'text-gray-200'}`}>
+                                                                                     {String(val)}
+                                                                                 </span>
+                                                                             </div>
+                                                                        ))}
+                                                                    </div>
+                                                                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 font-mono mt-2 bg-white/5 p-3 rounded-xl border border-white/10">
+                                                                         <span>Started: <span className="text-gray-200">{student.analytics.startedAt ? new Date(student.analytics.startedAt).toLocaleString() : '-'}</span></span>
+                                                                         <span>Updated: <span className="text-gray-200">{student.analytics.lastUpdatedAt ? new Date(student.analytics.lastUpdatedAt).toLocaleString() : '-'}</span></span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {/* RIGHT: Debug Configs Terminal */}
+                                                            {student.debug_configs && (
+                                                                <div className="flex-1 space-y-4">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Activity className="w-4 h-4 text-cyan-500" />
+                                                                        <span className="text-xs font-extrabold uppercase tracking-widest text-cyan-400">Environment Logs</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                         {[
+                                                                            { title: 'Start Config', data: student.debug_configs.start_config, color: 'text-emerald-400' }, 
+                                                                            { title: 'End Config / Last Push', data: student.debug_configs.end_config || student.debug_configs.submit_config, color: 'text-cyan-400' }
+                                                                         ].map((cfg, idx) => {
+                                                                             if (!cfg.data) return null;
+                                                                             
+                                                                             const renderTerminalObject = (obj, indent = 0) => {
+                                                                                if (!obj || typeof obj !== 'object') return null;
+                                                                                return Object.entries(obj).map(([key, value]) => {
+                                                                                    if (value === null || value === undefined) return null;
+                                                                                    if (typeof value === 'object' && !Array.isArray(value)) {
+                                                                                        return (
+                                                                                            <div key={key} className="mt-1">
+                                                                                                <span className="text-gray-500" style={{ marginLeft: `${indent * 12}px` }}>{key}:</span>
+                                                                                                {renderTerminalObject(value, indent + 1)}
+                                                                                            </div>
+                                                                                        );
+                                                                                    }
+                                                                                    if (Array.isArray(value)) {
+                                                                                        return (
+                                                                                            <div key={key} className="mt-1">
+                                                                                                <span className="text-gray-500" style={{ marginLeft: `${indent * 12}px` }}>{key}:</span>
+                                                                                                {value.map((item, idxx) => (
+                                                                                                    <div key={idxx} style={{ marginLeft: `${(indent + 1) * 12}px` }}>
+                                                                                                        {typeof item === 'object' ? renderTerminalObject(item, indent + 1) : <span className={cfg.color}>{String(item)}</span>}
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                            </div>
+                                                                                        );
+                                                                                    }
+                                                                                    return (
+                                                                                        <div key={key} className="flex gap-2 mt-0.5">
+                                                                                            <span className="text-gray-500" style={{ marginLeft: `${indent * 12}px` }}>{key}:</span>
+                                                                                            <span className={`${cfg.color} break-all`}>{String(value)}</span>
+                                                                                        </div>
+                                                                                    );
+                                                                                });
+                                                                             };
+
+                                                                             return (
+                                                                                 <div key={idx} className="bg-[#0B0F19] border border-white/10 rounded-xl overflow-hidden font-mono shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] flex flex-col md:max-h-[450px]">
+                                                                                    <div className="px-4 py-3 bg-[#1A1F2E] border-b border-white/5 flex items-center gap-3 shrink-0">
+                                                                                        <div className="flex gap-1.5 opacity-50"><div className="w-2.5 h-2.5 rounded-full bg-red-500"/><div className="w-2.5 h-2.5 rounded-full bg-amber-500"/><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"/></div>
+                                                                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${cfg.color}`}>{cfg.title}</span>
+                                                                                    </div>
+                                                                                    {/* -- Quick Insights Header -- */}
+                                                                                    <div className="px-4 py-2 border-b border-white/5 bg-white/[0.02] flex flex-wrap gap-2 shrink-0">
+                                                                                        {cfg.data.os?.platform && (
+                                                                                            <span className="px-2 py-1 rounded flex items-center gap-1.5 bg-white/5 border border-white/10 text-[10px] text-gray-300 shadow-sm">
+                                                                                                <Activity className="w-3 h-3 text-cyan-400" />
+                                                                                                {cfg.data.os?.platform === 'win32' ? 'Windows' : cfg.data.os?.platform === 'darwin' ? 'macOS' : cfg.data.os?.platform} {cfg.data.os?.arch ? `(${cfg.data.os.arch})` : ''}
+                                                                                            </span>
+                                                                                        )}
+                                                                                        {cfg.data.network?.interfaces?.[0]?.ip && (
+                                                                                            <span className="px-2 py-1 rounded flex items-center gap-1.5 bg-white/5 border border-white/10 text-[10px] text-gray-300 shadow-sm">
+                                                                                                <Wifi className="w-3 h-3 text-blue-400" />
+                                                                                                {cfg.data.network.interfaces[0].ip}
+                                                                                            </span>
+                                                                                        )}
+                                                                                        {cfg.data.proxy?.settings && (
+                                                                                            <span className={`px-2 py-1 rounded flex items-center gap-1.5 border border-white/10 text-[10px] shadow-sm ${cfg.data.proxy.settings === 'DIRECT' ? 'bg-white/5 text-gray-300' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
+                                                                                                <ShieldAlert className="w-3 h-3" />
+                                                                                                Proxy: {cfg.data.proxy.settings}
+                                                                                            </span>
+                                                                                        )}
+                                                                                        {cfg.data.timestamp && (
+                                                                                            <span className="px-2 py-1 rounded flex items-center gap-1.5 bg-white/5 border border-white/10 text-[10px] text-gray-300 shadow-sm" title={new Date(cfg.data.timestamp).toLocaleString()}>
+                                                                                                <Clock className="w-3 h-3 text-violet-400" />
+                                                                                                {new Date(cfg.data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    {/* -- Raw Terminal Output -- */}
+                                                                                    <div className="p-4 text-[11px] leading-relaxed overflow-y-auto custom-scrollbar flex-1 whitespace-nowrap bg-black/40">
+                                                                                        {renderTerminalObject(cfg.data)}
+                                                                                    </div>
+                                                                                 </div>
+                                                                             );
+                                                                         })}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            
                                                         </div>
-                                                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                                                            {/* IP Tracking */}
-                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
-                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Starting IP</div>
-                                                                <div className="text-sm font-bold text-gray-800 dark:text-gray-200 font-mono">{student.analytics.startingIp || '-'}</div>
-                                                            </div>
-                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
-                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Ending IP</div>
-                                                                <div className={`text-sm font-bold font-mono ${student.analytics.startingIp && student.analytics.endingIp && student.analytics.startingIp !== student.analytics.endingIp ? 'text-red-500' : 'text-gray-800 dark:text-gray-200'}`}>
-                                                                    {student.analytics.endingIp || '-'}
-                                                                    {student.analytics.startingIp && student.analytics.endingIp && student.analytics.startingIp !== student.analytics.endingIp && (
-                                                                        <span className="ml-1 text-[9px] text-red-400 font-sans">⚠ Changed</span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            {/* Focus */}
-                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
-                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><EyeOff className="w-3 h-3" /> Lost Focus</div>
-                                                                <div className={`text-lg font-black ${(student.analytics.lostFocusCount || 0) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{student.analytics.lostFocusCount ?? 0}</div>
-                                                            </div>
-                                                            {/* Face Warnings */}
-                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
-                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><ShieldAlert className="w-3 h-3" /> Face Warnings</div>
-                                                                <div className={`text-lg font-black ${(student.analytics.faceWarnings || 0) > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                                                                    {student.analytics.faceWarnings ?? 0}
-                                                                    <span className="text-xs font-medium text-gray-400">/{student.analytics.faceWarningsMax ?? '?'}</span>
-                                                                </div>
-                                                            </div>
-                                                            {/* Internet */}
-                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
-                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><WifiOff className="w-3 h-3" /> Disconnects</div>
-                                                                <div className={`text-lg font-black ${(student.analytics.internetDisconnects || 0) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{student.analytics.internetDisconnects ?? 0}</div>
-                                                                {(student.analytics.internetOfflineSeconds || 0) > 0 && (
-                                                                    <div className="text-[10px] text-gray-400 mt-0.5">{student.analytics.internetOfflineSeconds}s offline</div>
-                                                                )}
-                                                            </div>
-                                                            {/* Blocked */}
-                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
-                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Blocked by Proctor</div>
-                                                                <div className={`text-lg font-black ${(student.analytics.blockedByProctorCount || 0) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{student.analytics.blockedByProctorCount ?? 0}</div>
-                                                                {(student.analytics.blockedSeconds || 0) > 0 && (
-                                                                    <div className="text-[10px] text-gray-400 mt-0.5">{student.analytics.blockedSeconds}s blocked</div>
-                                                                )}
-                                                            </div>
-                                                            {/* Compile Clicks */}
-                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
-                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><MousePointerClick className="w-3 h-3" /> Compile Clicks</div>
-                                                                <div className="text-lg font-black text-cyan-600 dark:text-cyan-400">{student.analytics.compileClicks ?? 0}</div>
-                                                            </div>
-                                                            {/* Submit Clicks */}
-                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
-                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1"><MousePointerClick className="w-3 h-3" /> Submit Clicks</div>
-                                                                <div className="text-lg font-black text-violet-600 dark:text-violet-400">{student.analytics.submitClicks ?? 0}</div>
-                                                            </div>
-                                                            {/* Continue Clicks */}
-                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
-                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Continue Clicks</div>
-                                                                <div className="text-lg font-black text-gray-700 dark:text-gray-200">{student.analytics.continueClicks ?? 0}</div>
-                                                            </div>
-                                                            {/* Submit Reason */}
-                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm col-span-2 md:col-span-1">
-                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Submit Reason</div>
-                                                                <div className={`text-xs font-bold ${student.analytics.submitReason?.includes('student') ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                                                                    {student.analytics.submitReason || '-'}
-                                                                </div>
-                                                            </div>
-                                                            {/* Timing */}
-                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
-                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Started At</div>
-                                                                <div className="text-xs font-bold text-gray-700 dark:text-gray-200">{student.analytics.startedAt ? new Date(student.analytics.startedAt).toLocaleString() : '-'}</div>
-                                                            </div>
-                                                            <div className="p-3 rounded-xl bg-white dark:bg-[#1A1F2E] border border-gray-200 dark:border-white/5 shadow-sm">
-                                                                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Last Updated</div>
-                                                                <div className="text-xs font-bold text-gray-700 dark:text-gray-200">{student.analytics.lastUpdatedAt ? new Date(student.analytics.lastUpdatedAt).toLocaleString() : '-'}</div>
-                                                            </div>
-                                                        </div>
-                                                        {/* Per-Question Analytics */}
-                                                        {student.analytics.perQuestion && Object.keys(student.analytics.perQuestion).length > 0 && (
-                                                            <div className="mt-4">
-                                                                <div className="flex items-center gap-2 mb-3">
-                                                                    <MousePointerClick className="w-3.5 h-3.5 text-violet-500" />
-                                                                    <span className="text-[10px] font-extrabold uppercase tracking-widest text-violet-600 dark:text-violet-400">Per-Question Clicks</span>
-                                                                </div>
-                                                                <div className="rounded-xl border border-gray-200 dark:border-white/5 overflow-hidden bg-white dark:bg-[#1A1F2E]">
-                                                                    <table className="w-full text-xs">
-                                                                        <thead className="bg-gray-50 dark:bg-black/20 border-b border-gray-200 dark:border-white/5">
-                                                                            <tr>
-                                                                                <th className="p-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Question ID</th>
-                                                                                <th className="p-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-cyan-500">Compile</th>
-                                                                                <th className="p-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-violet-500">Submit</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-                                                                            {Object.entries(student.analytics.perQuestion).map(([qId, qData], qi) => (
-                                                                                <tr key={qId} className="hover:bg-gray-50/50 dark:hover:bg-white/5 transition-colors">
-                                                                                    <td className="p-2.5 font-mono text-gray-600 dark:text-gray-300">Q{qi + 1} <span className="text-[9px] text-gray-400">({qId.slice(-6)})</span></td>
-                                                                                    <td className="p-2.5 text-center font-bold text-cyan-600 dark:text-cyan-400">{qData.compileClicks ?? 0}</td>
-                                                                                    <td className="p-2.5 text-center font-bold text-violet-600 dark:text-violet-400">{qData.submitClicks ?? 0}</td>
-                                                                                </tr>
-                                                                            ))}
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                        {/* Navigate to student detail */}
+
+                                                        {/* Optional link */}
                                                         {onStudentSelect && student.student_name && (
-                                                            <div className="mt-4 flex justify-end">
+                                                            <div className="mt-6 pt-6 border-t border-white/5 flex justify-end">
                                                                 <button
                                                                     onClick={(e) => { e.stopPropagation(); onStudentSelect(student); }}
-                                                                    className="text-xs font-bold text-violet-600 dark:text-violet-400 hover:text-violet-500 flex items-center gap-1 transition-colors"
+                                                                    className="text-xs font-bold text-violet-300 hover:text-white bg-violet-500/10 hover:bg-violet-500/20 px-4 py-2 rounded-xl transition-all flex items-center gap-2 border border-violet-500/20 shadow-sm"
                                                                 >
-                                                                    View Student Detail <ArrowLeft className="w-3 h-3 rotate-180" />
+                                                                    Dive into Student Submissions <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
                                                                 </button>
                                                             </div>
                                                         )}
