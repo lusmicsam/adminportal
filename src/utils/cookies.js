@@ -31,10 +31,15 @@ export function setAdminToken(token) {
     // MICROSOFT EDGE / NEXT.JS MIDDLEWARE SUPPORT
     // We must set a cookie so the server-side middleware can see the token.
     // Set cookie to expire in 7 days (matches typical JWT validity)
+    // NOTE: HttpOnly cannot be set from JS by design — the backend should
+    //       set this cookie via a Set-Cookie response header for full protection.
     const d = new Date();
     d.setTime(d.getTime() + (7 * 24 * 60 * 60 * 1000));
     const expires = "expires=" + d.toUTCString();
-    document.cookie = "admin_token=" + token + ";" + expires + ";path=/;SameSite=Strict";
+    // Secure flag ensures cookie is only sent over HTTPS
+    const isProduction = window.location.protocol === 'https:';
+    const secureFlag = isProduction ? ';Secure' : '';
+    document.cookie = "admin_token=" + token + ";" + expires + ";path=/;SameSite=Strict" + secureFlag;
 }
 
 /**

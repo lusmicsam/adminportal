@@ -104,7 +104,7 @@ export default function SectionDetailView({ section, teachers = [], onBack, onSt
 
             setLoading(true);
             try {
-                const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionAnalytics(encodeURIComponent(sectionName))}`;
+                const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionAnalytics(encodeURIComponent(encodeURIComponent(sectionName)))}`;
                 const token = getAdminToken();
                 const headers = {};
                 if (token) {

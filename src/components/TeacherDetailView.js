@@ -62,7 +62,7 @@ export default function TeacherDetailView({ teacher, onBack, onSectionSelect, ca
 
         // Fetch from API
         try {
-            const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionAnalytics(encodeURIComponent(sectionName))}`;
+            const url = `${API_CONFIG.baseUrl.admin}${API_CONFIG.admin.sectionAnalytics(encodeURIComponent(encodeURIComponent(sectionName)))}`;
             const token = getAdminToken();
             const headers = {};
             if (token) {
